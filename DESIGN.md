@@ -37,6 +37,8 @@ application.
   this naturally).
 - The system prompt is fully customizable in settings. A sensible default is
   provided and visible to the user, who can edit it entirely.
+- If the clipboard is empty or contains non-text content, an error sound is
+  played and a system tray notification describes the problem.
 
 ### 2. Voice Dictation
 
@@ -52,7 +54,11 @@ application.
 
 **Behavior:**
 - Supports both short bursts (a sentence) and longer recordings.
-- Multi-language support (English and Finnish at minimum).
+- Maximum recording duration of 1 hour to prevent infinite recordings. When the
+  limit is reached, recording stops automatically and proceeds to transcription.
+- Multi-language support (English and Finnish at minimum). Language is
+  auto-detected by the speech-to-text provider (Scribe v2 supports this
+  natively).
 - Microphone is selectable in settings.
 - Output mode is configurable: clipboard or direct insertion.
 
@@ -73,17 +79,20 @@ application.
 A windowed settings dialog with three tabs:
 
 **General tab:**
-- Global hotkey configuration for typo fixing and dictation.
+- Global hotkey configuration for typo fixing and dictation. Hotkeys use a
+  modifier+key format (e.g., Ctrl+Alt+Space, Ctrl+Shift+T).
 - Start with Windows (toggle).
 - Logging level selection (Debug / Info / Warning / Error).
 
 **Typo Fixing tab:**
 - LLM provider configuration (API endpoint URL, API key, model name).
+- "Test Connection" button to validate API connectivity and credentials.
 - System prompt editor showing the full default prompt, fully editable by the
   user.
 
 **Dictation tab:**
 - Speech-to-text provider configuration (API key, model name).
+- "Test Connection" button to validate API connectivity and credentials.
 - Microphone selection dropdown.
 - Output mode for dictation (clipboard vs direct insertion).
 
@@ -94,6 +103,9 @@ A windowed settings dialog with three tabs:
   begins.
 - **Recording stopped:** A sound is played when dictation recording stops and
   transcription begins.
+- **Busy:** If the user triggers an operation while another is already in
+  progress, the new operation is ignored and a short error sound is played to
+  indicate the app is busy.
 - **Error:** An error sound is played and an informative system tray notification
   is shown describing the problem (e.g., "API request failed: invalid API key").
 - All sounds use built-in Windows system sounds initially. Custom sound support
@@ -127,6 +139,10 @@ accessible:
 ### Runtime & Language
 - **C# on .NET 10** (LTS, released November 2025, supported until November
   2028).
+- **Note:** .NET 10 officially supports Windows 10 only on Enterprise and IoT
+  LTSC editions. Windows 10 Home/Pro is not in the supported OS matrix (though
+  it will likely work in practice). Windows 10 consumer support ended October
+  2025 (ESU available through October 2026).
 - **WinForms** for the settings GUI and system tray integration.
 
 ### Build & Development
@@ -166,6 +182,32 @@ accessible:
   harder to unit test and will rely on manual verification, but the design
   should separate logic from UI to maximize testable surface area.
 
+## Application Behavior
+
+### Single Instance
+
+The app enforces single-instance execution. If the user launches a second
+instance, it exits immediately (optionally bringing the existing instance's
+settings window to the foreground).
+
+### Hotkey Conflict Handling
+
+- When the user configures a new hotkey in settings, the app attempts to register
+  it and shows an error if the hotkey is already in use by another application.
+- On startup, if a configured hotkey cannot be registered, a system tray
+  notification informs the user of the conflict.
+
+### Concurrency
+
+Only one operation (typo fix or dictation) can run at a time. If the user
+triggers a second operation while one is in progress, it is ignored and a short
+error sound is played.
+
+### API Timeouts
+
+API calls to the LLM and speech-to-text services use a 30-second timeout. On
+timeout, an error sound is played and a system tray notification is shown.
+
 ## Architecture Considerations
 
 ### Provider Abstraction
@@ -204,6 +246,9 @@ The design separates:
   restore the original clipboard contents.
 - `SendInput` is preferred over the WinForms `SendKeys` class for reliability,
   especially alongside screen readers like NVDA.
+- **Known limitation:** There is a small race condition window between pasting and
+  restoring the clipboard. If the user copies something during this window, their
+  clipboard content may be overwritten by the restore.
 - Clipboard mode (no automatic pasting) remains the reliable default.
 
 ## Project Structure (Preliminary)
