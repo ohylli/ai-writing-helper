@@ -8,16 +8,22 @@ We have a design doc (`design.md`) and no code yet. The goal is to build a Windo
 
 ---
 
-## Phase 1: Project Scaffolding
+## Phase 1: Project Scaffolding & Logging
 
-Create the solution structure, add NuGet dependencies, verify it builds and runs (empty tray app).
+Create the solution structure, add NuGet dependencies, configure logging, verify it builds and runs (empty tray app).
 
 - [ ] Create `AIWritingHelper.sln`, `src/AIWritingHelper/AIWritingHelper.csproj` (.NET 10, WinForms, single-file publish ready)
 - [ ] Create `tests/AIWritingHelper.Tests/AIWritingHelper.Tests.csproj` (xUnit)
 - [ ] Create folder skeleton: `Core/`, `Services/`, `UI/`, `Audio/`, `Config/`
 - [ ] Add NuGet packages: `YamlDotNet`, `NAudio`, `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging`, `Serilog` (+ file sink)
+- [ ] Configure Serilog with file sink (log to `%APPDATA%\AIWritingHelper\logs\`)
+  - New timestamped log file per app startup (e.g., `log-2026-02-19_143022.txt`)
+  - On startup, delete all but the 3 most recent log files
+  - Log level driven by settings (once settings exist; hardcode a default initially)
+  - Wire into DI as `ILogger<T>`
 - [ ] Minimal `Program.cs`: application entry point, DI container setup, WinForms `Application.Run()` with a placeholder tray icon
 - [ ] Single-instance enforcement using a named `Mutex`
+- [ ] App-wide `CancellationTokenSource` for graceful shutdown — cancelled on app exit so in-flight API calls terminate immediately instead of waiting for timeout
 - [ ] Verify: `dotnet build` succeeds, `dotnet run` shows a tray icon, second instance exits
 
 ---
@@ -33,21 +39,14 @@ Build the settings infrastructure — everything else depends on it.
 
 ---
 
-## Phase 3: Logging
-
-- [ ] Configure Serilog with file sink (log to `%APPDATA%\AIWritingHelper\logs\`)
-- [ ] Log level driven by settings
-- [ ] Wire into DI as `ILogger<T>`
-
----
-
-## Phase 4: Core Interfaces & Sound Feedback
+## Phase 3: Core Interfaces & Sound Feedback
 
 Define the abstractions and build the sound/notification feedback system.
 
 - [ ] `Core/ILLMProvider.cs` — `Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)`
 - [ ] `Core/ISTTProvider.cs` — `Task<string> TranscribeAsync(Stream audio, CancellationToken ct)` (interface only for now)
 - [ ] `Core/IClipboardService.cs` — `string? GetText()`, `void SetText(string text)` (abstraction over WinForms clipboard for testability)
+  - **Note:** WinForms clipboard access must happen on the STA thread. The implementation must marshal calls to the UI thread.
 - [ ] `Core/ISoundPlayer.cs` — `void PlaySuccess()`, `void PlayError()`, `void PlayRecordingStart()`, `void PlayRecordingStop()`
 - [ ] `Core/ITrayNotifier.cs` — `void ShowNotification(string title, string message)`
 - [ ] `Audio/SystemSoundPlayer.cs` — implementation using Windows system sounds (`SystemSounds.Asterisk`, `.Hand`, etc.)
@@ -55,13 +54,13 @@ Define the abstractions and build the sound/notification feedback system.
 
 ---
 
-## Phase 5: LLM Service
+## Phase 4: LLM Service
 
 Implement the OpenAI-compatible API client.
 
 - [ ] `Services/OpenAICompatibleLLMProvider.cs` — implements `ILLMProvider`
   - `HttpClient` with configurable base URL, API key (Bearer token), model name
-  - POST to `{baseUrl}/v1/chat/completions` with system prompt + user text
+  - Base URL is expected to include the version prefix (e.g., `https://api.cerebras.ai/v1`). The provider appends `/chat/completions` to the base URL.
   - Parse response, extract assistant message content
   - 30-second timeout via `CancellationTokenSource`
   - Proper error handling (HTTP errors, JSON parse errors, timeout)
@@ -69,7 +68,7 @@ Implement the OpenAI-compatible API client.
 
 ---
 
-## Phase 6: Typo Fix Orchestration
+## Phase 5: Typo Fix Orchestration
 
 The core workflow that ties clipboard, LLM, sound, and notifications together.
 
@@ -84,13 +83,14 @@ The core workflow that ties clipboard, LLM, sound, and notifications together.
 
 ---
 
-## Phase 7: Global Hotkeys & System Tray
+## Phase 6: Global Hotkeys & System Tray
 
 Wire up hotkey registration and the tray icon.
 
 - [ ] `Core/GlobalHotkeyManager.cs` — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke, modifier+key format
   - Register configured hotkey for typo fix
   - Handle `WM_HOTKEY` messages
+  - **Note:** `RegisterHotKey` delivers `WM_HOTKEY` to a specific window handle. The implementation needs an HWND — typically a hidden `NativeWindow` or the form handle. Decide on exact approach during implementation.
   - Error handling for conflicts (hotkey already registered by another app)
 - [ ] `UI/TrayApplicationContext.cs` — `ApplicationContext` subclass
   - `NotifyIcon` with icon and context menu (Settings, Quit)
@@ -100,20 +100,22 @@ Wire up hotkey registration and the tray icon.
 
 ---
 
-## Phase 8: Settings GUI (General + Typo Fixing tabs)
+## Phase 7: Settings GUI (General + Typo Fixing tabs)
 
 - [ ] `UI/SettingsForm.cs` — WinForms `Form` with `TabControl`
   - **General tab:** hotkey config for typo fix (and dictation placeholder), start-with-Windows checkbox, log level dropdown
+    - Hotkey configuration UX TBD — decide during implementation whether to use a key-capture control or another approach (key-capture is likely more accessible for a blind user)
   - **Typo Fixing tab:** API endpoint URL, API key (password masked), model name, "Test Connection" button, system prompt multi-line textbox (shows default, fully editable)
-  - **Dictation tab:** placeholder controls (filled in Phase 13)
+  - **Dictation tab:** placeholder controls (filled in Phase 12)
 - [ ] Accessibility: every control has `AccessibleName`/`AccessibleDescription`, logical tab order, keyboard-navigable
 - [ ] Save/Cancel buttons, load current settings on open, save to `SettingsManager`
 - [ ] "Test Connection" calls the LLM with a trivial test prompt, shows success/failure
 - [ ] Hot-reload: after saving, re-register hotkeys if changed, update log level
+- [ ] Start-with-Windows implementation: add/remove registry entry in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` based on the checkbox setting
 
 ---
 
-## Phase 9: Polish & End-to-End Testing (Typo Fixing)
+## Phase 8: Polish & End-to-End Testing (Typo Fixing)
 
 Manual end-to-end validation of the complete typo fixing flow.
 
@@ -127,7 +129,7 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ---
 
-## Phase 10: Audio Recording
+## Phase 9: Audio Recording
 
 - [ ] `Audio/MicrophoneRecorder.cs` — NAudio `WaveInEvent` wrapper
   - Start/stop recording to a `MemoryStream` (WAV format)
@@ -137,10 +139,11 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ---
 
-## Phase 11: Speech-to-Text Service
+## Phase 10: Speech-to-Text Service
 
 - [ ] `Services/ElevenLabsSTTProvider.cs` — implements `ISTTProvider`
   - POST audio to ElevenLabs Scribe v2 endpoint (multipart form upload)
+  - Verify that the WAV format from NAudio is accepted by the API (ElevenLabs does accept WAV)
   - Parse transcription response
   - 30-second timeout
   - Error handling
@@ -148,30 +151,31 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ---
 
-## Phase 12: Dictation Orchestration
+## Phase 11: Dictation Orchestration
 
 - [ ] `Core/DictationService.cs`
   - Toggle pattern: first hotkey press starts recording, second stops
   - On stop: send audio to STT provider, get text
   - Output mode from settings: clipboard or direct insertion
   - Play appropriate sounds (start, stop, success, error)
-  - Uses `OperationLock` from Phase 6
+  - Uses `OperationLock` from Phase 5
 - [ ] `Core/DirectInsertionService.cs` — save clipboard → set text → `SendInput` Ctrl+V → restore clipboard
   - Uses Win32 `SendInput` P/Invoke (not `SendKeys`)
+  - **Note:** A delay is needed between the `SendInput` paste and clipboard restore, otherwise the restore happens before the target app processes the paste. This is inherently fragile — clipboard mode remains the reliable default.
 - [ ] Unit tests
 
 ---
 
-## Phase 13: Settings GUI — Dictation Tab
+## Phase 12: Settings GUI — Dictation Tab
 
 - [ ] Fill in the Dictation tab: API key, model name, "Test Connection", microphone dropdown, output mode radio buttons
 - [ ] Microphone dropdown populated from `IAudioRecorder.EnumerateDevices()`
-- [ ] Accessibility: same standards as Phase 8
+- [ ] Accessibility: same standards as Phase 7
 - [ ] Register dictation hotkey alongside typo fix hotkey
 
 ---
 
-## Phase 14: Final Integration & Testing
+## Phase 13: Final Integration & Testing
 
 - [ ] End-to-end dictation: press hotkey → speak → press hotkey → text appears
 - [ ] Test both output modes (clipboard, direct insertion)
