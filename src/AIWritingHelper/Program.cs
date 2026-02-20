@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using AIWritingHelper.UI;
 
 namespace AIWritingHelper;
@@ -13,6 +15,11 @@ internal static class Program
         using var mutex = new Mutex(true, @"Global\AIWritingHelper", out bool createdNew);
         if (!createdNew)
         {
+            MessageBox.Show(
+                "AI Writing Helper is already running.",
+                "Already Running",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
             return;
         }
 
@@ -23,9 +30,10 @@ internal static class Program
 
         CleanOldLogs(logDir);
 
+        var levelSwitch = new LoggingLevelSwitch(LogEventLevel.Information);
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
+            .MinimumLevel.ControlledBy(levelSwitch)
             .WriteTo.File(Path.Combine(logDir, $"log-{timestamp}.txt"))
             .CreateLogger();
 
@@ -33,16 +41,18 @@ internal static class Program
         {
             Log.Information("AI Writing Helper starting");
 
-            var appCts = new CancellationTokenSource();
+            using var appCts = new CancellationTokenSource();
             Application.ApplicationExit += (_, _) => appCts.Cancel();
 
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddSerilog());
             services.AddSingleton(appCts);
-            var provider = services.BuildServiceProvider();
+            services.AddSingleton(levelSwitch);
+            services.AddSingleton<TrayApplicationContext>();
+            using var provider = services.BuildServiceProvider();
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new TrayApplicationContext(provider.GetRequiredService<ILogger<TrayApplicationContext>>()));
+            Application.Run(provider.GetRequiredService<TrayApplicationContext>());
 
             Log.Information("AI Writing Helper exiting");
         }
@@ -61,7 +71,7 @@ internal static class Program
         try
         {
             var oldLogs = Directory.GetFiles(logDir, "log-*.txt")
-                .OrderByDescending(f => f)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
                 .Skip(3);
             foreach (var f in oldLogs)
             {

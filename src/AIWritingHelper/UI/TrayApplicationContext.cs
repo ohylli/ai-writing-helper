@@ -5,6 +5,7 @@ namespace AIWritingHelper.UI;
 internal sealed class TrayApplicationContext : ApplicationContext
 {
     private readonly NotifyIcon _notifyIcon;
+    private readonly ContextMenuStrip _contextMenu;
     private readonly ILogger<TrayApplicationContext> _logger;
 
     public TrayApplicationContext(ILogger<TrayApplicationContext> logger)
@@ -18,15 +19,15 @@ internal sealed class TrayApplicationContext : ApplicationContext
             Application.Exit();
         };
 
-        var contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add(quitItem);
+        _contextMenu = new ContextMenuStrip();
+        _contextMenu.Items.Add(quitItem);
 
         _notifyIcon = new NotifyIcon
         {
             Icon = SystemIcons.Application,
             Text = "AI Writing Helper",
             Visible = true,
-            ContextMenuStrip = contextMenu
+            ContextMenuStrip = _contextMenu
         };
 
         _logger.LogInformation("Tray icon created");
@@ -38,6 +39,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         {
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
+            _contextMenu.Dispose();
         }
         base.Dispose(disposing);
     }
