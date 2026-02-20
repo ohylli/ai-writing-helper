@@ -57,6 +57,10 @@ tests/AIWritingHelper.Tests/   # xUnit or NUnit tests
 
 Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey bindings, system prompt (user-editable with sensible default), microphone selection, output mode, log level.
 
+## Current Status
+
+Phase 1 (Project Scaffolding & Logging) is complete. The solution builds, tests pass, and the app runs as a system tray icon with single-instance enforcement and Serilog file logging. Next up: Phase 2 (Settings & Configuration).
+
 ## Implementation Plan
 
 The detailed phased implementation plan is in `implementation-plan.md`. Strategy: build typo fixing end-to-end first (includes all shared infrastructure), then layer dictation on top.

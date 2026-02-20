@@ -12,19 +12,19 @@ We have a design doc (`design.md`) and no code yet. The goal is to build a Windo
 
 Create the solution structure, add NuGet dependencies, configure logging, verify it builds and runs (empty tray app).
 
-- [ ] Create `AIWritingHelper.sln`, `src/AIWritingHelper/AIWritingHelper.csproj` (.NET 10, WinForms, single-file publish ready)
-- [ ] Create `tests/AIWritingHelper.Tests/AIWritingHelper.Tests.csproj` (xUnit)
-- [ ] Create folder skeleton: `Core/`, `Services/`, `UI/`, `Audio/`, `Config/`
-- [ ] Add NuGet packages: `YamlDotNet`, `NAudio`, `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging`, `Serilog` (+ file sink)
-- [ ] Configure Serilog with file sink (log to `%APPDATA%\AIWritingHelper\logs\`)
+- [x] Create `AIWritingHelper.sln`, `src/AIWritingHelper/AIWritingHelper.csproj` (.NET 10, WinForms, single-file publish ready)
+- [x] Create `tests/AIWritingHelper.Tests/AIWritingHelper.Tests.csproj` (xUnit)
+- [x] Create folder skeleton: `Core/`, `Services/`, `UI/`, `Audio/`, `Config/`
+- [x] Add NuGet packages: `YamlDotNet`, `NAudio`, `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Logging`, `Serilog` (+ file sink)
+- [x] Configure Serilog with file sink (log to `%APPDATA%\AIWritingHelper\logs\`)
   - New timestamped log file per app startup (e.g., `log-2026-02-19_143022.txt`)
   - On startup, delete all but the 3 most recent log files
   - Log level driven by settings (once settings exist; hardcode a default initially)
   - Wire into DI as `ILogger<T>`
-- [ ] Minimal `Program.cs`: application entry point, DI container setup, WinForms `Application.Run()` with a placeholder tray icon
-- [ ] Single-instance enforcement using a named `Mutex`
-- [ ] App-wide `CancellationTokenSource` for graceful shutdown — cancelled on app exit so in-flight API calls terminate immediately instead of waiting for timeout
-- [ ] Verify: `dotnet build` succeeds, `dotnet run` shows a tray icon, second instance exits
+- [x] Minimal `Program.cs`: application entry point, DI container setup, WinForms `Application.Run()` with a placeholder tray icon
+- [x] Single-instance enforcement using a named `Mutex`
+- [x] App-wide `CancellationTokenSource` for graceful shutdown — cancelled on app exit so in-flight API calls terminate immediately instead of waiting for timeout
+- [x] Verify: `dotnet build` succeeds, `dotnet run` shows a tray icon, second instance exits
 
 ---
 
