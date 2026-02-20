@@ -59,7 +59,7 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phase 1 (Project Scaffolding & Logging) is complete. The solution builds, tests pass, and the app runs as a system tray icon with single-instance enforcement and Serilog file logging. Next up: Phase 2 (Settings & Configuration).
+Phases 1-2 are complete. The app runs as a system tray icon with single-instance enforcement, Serilog logging, and YAML-based settings persistence (`AppSettings` + `SettingsManager` in `Config/`). Settings are loaded at startup and registered in DI. Next up: Phase 3.
 
 ## Implementation Plan
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using AIWritingHelper.Config;
 using AIWritingHelper.UI;
 
 namespace AIWritingHelper;
@@ -41,6 +42,16 @@ internal static class Program
         {
             Log.Information("AI Writing Helper starting");
 
+            // Load settings early so we can apply log level and register in DI
+            var settingsManager = new SettingsManager(
+                LoggerFactory.Create(b => b.AddSerilog()).CreateLogger<SettingsManager>());
+            var appSettings = settingsManager.Load();
+
+            if (Enum.TryParse<LogEventLevel>(appSettings.LogLevel, ignoreCase: true, out var parsedLevel))
+            {
+                levelSwitch.MinimumLevel = parsedLevel;
+            }
+
             using var appCts = new CancellationTokenSource();
             Application.ApplicationExit += (_, _) => appCts.Cancel();
 
@@ -48,6 +59,8 @@ internal static class Program
             services.AddLogging(builder => builder.AddSerilog());
             services.AddSingleton(appCts);
             services.AddSingleton(levelSwitch);
+            services.AddSingleton(settingsManager);
+            services.AddSingleton(appSettings);
             services.AddSingleton<TrayApplicationContext>();
             using var provider = services.BuildServiceProvider();
 

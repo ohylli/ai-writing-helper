@@ -32,10 +32,10 @@ Create the solution structure, add NuGet dependencies, configure logging, verify
 
 Build the settings infrastructure — everything else depends on it.
 
-- [ ] `Config/AppSettings.cs` — settings model class (all fields from design doc: API keys, endpoints, model names, hotkeys, system prompt, mic selection, output mode, log level, start-with-Windows)
-- [ ] `Config/SettingsManager.cs` — load/save YAML to `%APPDATA%\AIWritingHelper\settings.yaml`, sensible defaults, create directory if missing
-- [ ] Default system prompt for typo fixing (from design doc: fix typos/grammar, preserve formatting/markdown/meaning)
-- [ ] Unit tests: round-trip save/load, defaults applied for missing fields, corrupt file handling
+- [x] `Config/AppSettings.cs` — settings model class (all fields from design doc: API keys, endpoints, model names, hotkeys, system prompt, mic selection, output mode, log level, start-with-Windows)
+- [x] `Config/SettingsManager.cs` — load/save YAML to `%APPDATA%\AIWritingHelper\settings.yaml`, sensible defaults, create directory if missing
+- [x] Default system prompt for typo fixing (from design doc: fix typos/grammar, preserve formatting/markdown/meaning)
+- [x] Unit tests: round-trip save/load, defaults applied for missing fields, corrupt file handling
 
 ---
 
