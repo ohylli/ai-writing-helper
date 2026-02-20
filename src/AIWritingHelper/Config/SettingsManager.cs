@@ -45,8 +45,9 @@ public class SettingsManager
             }
 
             var yaml = File.ReadAllText(SettingsFilePath);
-            var settings = _deserializer.Deserialize<AppSettings>(yaml);
-            return settings ?? new AppSettings();
+            var settings = _deserializer.Deserialize<AppSettings>(yaml) ?? new AppSettings();
+            NormalizeNullFields(settings);
+            return settings;
         }
         catch (Exception ex)
         {
@@ -55,13 +56,41 @@ public class SettingsManager
         }
     }
 
+    /// <summary>
+    /// Ensures no string properties are null after YAML deserialization,
+    /// since YamlDotNet can set them to null even when C# declares them non-nullable.
+    /// </summary>
+    private static void NormalizeNullFields(AppSettings settings)
+    {
+        var defaults = new AppSettings();
+        settings.LlmApiEndpoint ??= defaults.LlmApiEndpoint;
+        settings.LlmApiKey ??= defaults.LlmApiKey;
+        settings.LlmModelName ??= defaults.LlmModelName;
+        settings.LlmSystemPrompt ??= defaults.LlmSystemPrompt;
+        settings.SttApiKey ??= defaults.SttApiKey;
+        settings.SttModelName ??= defaults.SttModelName;
+        settings.TypoFixHotkey ??= defaults.TypoFixHotkey;
+        settings.DictationHotkey ??= defaults.DictationHotkey;
+        settings.LogLevel ??= defaults.LogLevel;
+        settings.MicrophoneDeviceName ??= defaults.MicrophoneDeviceName;
+        settings.DictationOutputMode ??= defaults.DictationOutputMode;
+    }
+
     public void Save(AppSettings settings)
     {
-        var directory = Path.GetDirectoryName(SettingsFilePath)!;
-        Directory.CreateDirectory(directory);
+        try
+        {
+            var directory = Path.GetDirectoryName(SettingsFilePath)!;
+            Directory.CreateDirectory(directory);
 
-        var yaml = _serializer.Serialize(settings);
-        File.WriteAllText(SettingsFilePath, yaml);
-        _logger.LogInformation("Settings saved");
+            var yaml = _serializer.Serialize(settings);
+            File.WriteAllText(SettingsFilePath, yaml);
+            _logger.LogInformation("Settings saved");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save settings to {Path}", SettingsFilePath);
+            throw;
+        }
     }
 }

@@ -110,7 +110,10 @@ Wire up hotkey registration and the tray icon.
 - [ ] Accessibility: every control has `AccessibleName`/`AccessibleDescription`, logical tab order, keyboard-navigable
 - [ ] Save/Cancel buttons, load current settings on open, save to `SettingsManager`
 - [ ] "Test Connection" calls the LLM with a trivial test prompt, shows success/failure
-- [ ] Hot-reload: after saving, re-register hotkeys if changed, update log level
+- [ ] Hot-reload after saving settings — the dialog mutates the existing `AppSettings` singleton directly (all services share the same reference, so changes are visible immediately):
+  - **Hotkeys:** The dialog calls `GlobalHotkeyManager` directly to re-register before saving. If registration fails, show an error in the dialog and let the user pick a different key — don't save the broken hotkey.
+  - **Log level:** The dialog updates `LoggingLevelSwitch.MinimumLevel` directly (it's a DI singleton designed for this).
+  - **API keys, model names, system prompt, etc.:** Just save — these are read on the next API call, no notification needed.
 - [ ] Start-with-Windows implementation: add/remove registry entry in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` based on the checkbox setting
 
 ---

@@ -42,9 +42,11 @@ internal static class Program
         {
             Log.Information("AI Writing Helper starting");
 
-            // Load settings early so we can apply log level and register in DI
+            // Load settings early so we can apply log level and register in DI.
+            // Create a dedicated factory that hooks into the already-configured Serilog static logger.
+            using var earlyLoggerFactory = LoggerFactory.Create(b => b.AddSerilog());
             var settingsManager = new SettingsManager(
-                LoggerFactory.Create(b => b.AddSerilog()).CreateLogger<SettingsManager>());
+                earlyLoggerFactory.CreateLogger<SettingsManager>());
             var appSettings = settingsManager.Load();
 
             if (Enum.TryParse<LogEventLevel>(appSettings.LogLevel, ignoreCase: true, out var parsedLevel))

@@ -32,6 +32,8 @@ public class SettingsManagerTests : IDisposable
         Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
         Assert.Equal("", settings.LlmApiKey);
         Assert.Equal("llama-4-scout-17b-16e-instruct", settings.LlmModelName);
+        Assert.Contains("Fix typos and obvious grammar mistakes", settings.LlmSystemPrompt);
+        Assert.Contains("Return only the corrected text with no explanation.", settings.LlmSystemPrompt);
         Assert.Equal("Ctrl+Alt+Space", settings.TypoFixHotkey);
         Assert.Equal("Ctrl+Alt+D", settings.DictationHotkey);
         Assert.False(settings.StartWithWindows);
@@ -113,5 +115,30 @@ public class SettingsManagerTests : IDisposable
         manager.Save(new AppSettings());
 
         Assert.True(File.Exists(nestedPath));
+        var loaded = manager.Load();
+        Assert.Equal("https://api.cerebras.ai/v1", loaded.LlmApiEndpoint);
+    }
+
+    [Fact]
+    public void Load_EmptyFile_ReturnsDefaults()
+    {
+        File.WriteAllText(_manager.SettingsFilePath, "");
+
+        var settings = _manager.Load();
+
+        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
+        Assert.Equal("Ctrl+Alt+Space", settings.TypoFixHotkey);
+        Assert.Equal("Clipboard", settings.DictationOutputMode);
+    }
+
+    [Fact]
+    public void Load_YamlNullValues_ReturnsDefaults()
+    {
+        File.WriteAllText(_manager.SettingsFilePath, "LlmApiEndpoint: ~\nLlmModelName: null\n");
+
+        var settings = _manager.Load();
+
+        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
+        Assert.Equal("llama-4-scout-17b-16e-instruct", settings.LlmModelName);
     }
 }
