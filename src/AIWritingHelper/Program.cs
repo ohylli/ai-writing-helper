@@ -3,7 +3,9 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using AIWritingHelper.Audio;
 using AIWritingHelper.Config;
+using AIWritingHelper.Core;
 using AIWritingHelper.UI;
 
 namespace AIWritingHelper;
@@ -57,6 +59,8 @@ internal static class Program
             using var appCts = new CancellationTokenSource();
             Application.ApplicationExit += (_, _) => appCts.Cancel();
 
+            ApplicationConfiguration.Initialize();
+
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddSerilog());
             services.AddSingleton(appCts);
@@ -64,9 +68,11 @@ internal static class Program
             services.AddSingleton(settingsManager);
             services.AddSingleton(appSettings);
             services.AddSingleton<TrayApplicationContext>();
+            services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
+            services.AddSingleton<IClipboardService, ClipboardService>();
+            services.AddSingleton<ITrayNotifier, TrayNotifier>();
             using var provider = services.BuildServiceProvider();
 
-            ApplicationConfiguration.Initialize();
             Application.Run(provider.GetRequiredService<TrayApplicationContext>());
 
             Log.Information("AI Writing Helper exiting");

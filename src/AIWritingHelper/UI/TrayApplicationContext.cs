@@ -8,6 +8,8 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private readonly ContextMenuStrip _contextMenu;
     private readonly ILogger<TrayApplicationContext> _logger;
 
+    internal NotifyIcon NotifyIcon => _notifyIcon;
+
     public TrayApplicationContext(ILogger<TrayApplicationContext> logger)
     {
         _logger = logger;
