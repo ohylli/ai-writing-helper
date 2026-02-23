@@ -27,20 +27,20 @@ public class SettingsManagerTests : IDisposable
     [Fact]
     public void Load_MissingFile_ReturnsDefaults()
     {
+        var defaults = new AppSettings();
         var settings = _manager.Load();
 
-        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
-        Assert.Equal("", settings.LlmApiKey);
-        Assert.Equal("llama-4-scout-17b-16e-instruct", settings.LlmModelName);
-        Assert.Contains("Fix typos and obvious grammar mistakes", settings.LlmSystemPrompt);
-        Assert.Contains("Return only the corrected text with no explanation.", settings.LlmSystemPrompt);
-        Assert.Equal("Ctrl+Alt+Space", settings.TypoFixHotkey);
-        Assert.Equal("Ctrl+Alt+D", settings.DictationHotkey);
-        Assert.False(settings.StartWithWindows);
-        Assert.Equal("Information", settings.LogLevel);
-        Assert.Equal("", settings.MicrophoneDeviceName);
-        Assert.Equal("Clipboard", settings.DictationOutputMode);
-        Assert.Equal("scribe_v2", settings.SttModelName);
+        Assert.Equal(defaults.LlmApiEndpoint, settings.LlmApiEndpoint);
+        Assert.Equal(defaults.LlmApiKey, settings.LlmApiKey);
+        Assert.Equal(defaults.LlmModelName, settings.LlmModelName);
+        Assert.Equal(defaults.LlmSystemPrompt, settings.LlmSystemPrompt);
+        Assert.Equal(defaults.TypoFixHotkey, settings.TypoFixHotkey);
+        Assert.Equal(defaults.DictationHotkey, settings.DictationHotkey);
+        Assert.Equal(defaults.StartWithWindows, settings.StartWithWindows);
+        Assert.Equal(defaults.LogLevel, settings.LogLevel);
+        Assert.Equal(defaults.MicrophoneDeviceName, settings.MicrophoneDeviceName);
+        Assert.Equal(defaults.DictationOutputMode, settings.DictationOutputMode);
+        Assert.Equal(defaults.SttModelName, settings.SttModelName);
     }
 
     [Fact]
@@ -82,16 +82,18 @@ public class SettingsManagerTests : IDisposable
     [Fact]
     public void Load_CorruptYaml_ReturnsDefaults()
     {
+        var defaults = new AppSettings();
         File.WriteAllText(_manager.SettingsFilePath, "{{{{not valid yaml::::}}}}");
 
         var settings = _manager.Load();
 
-        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
+        Assert.Equal(defaults.LlmApiEndpoint, settings.LlmApiEndpoint);
     }
 
     [Fact]
     public void Load_PartialYaml_MissingFieldsGetDefaults()
     {
+        var defaults = new AppSettings();
         File.WriteAllText(_manager.SettingsFilePath, "LlmApiKey: partial-key\nLogLevel: Debug\n");
 
         var settings = _manager.Load();
@@ -99,14 +101,15 @@ public class SettingsManagerTests : IDisposable
         Assert.Equal("partial-key", settings.LlmApiKey);
         Assert.Equal("Debug", settings.LogLevel);
         // Missing fields should have defaults
-        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
-        Assert.Equal("Ctrl+Alt+Space", settings.TypoFixHotkey);
-        Assert.Equal("Clipboard", settings.DictationOutputMode);
+        Assert.Equal(defaults.LlmApiEndpoint, settings.LlmApiEndpoint);
+        Assert.Equal(defaults.TypoFixHotkey, settings.TypoFixHotkey);
+        Assert.Equal(defaults.DictationOutputMode, settings.DictationOutputMode);
     }
 
     [Fact]
     public void Save_CreatesDirectoryIfNeeded()
     {
+        var defaults = new AppSettings();
         var nestedDir = Path.Combine(_tempDir, "sub", "dir");
         var nestedPath = Path.Combine(nestedDir, "settings.yaml");
         var logger = NullLoggerFactory.Instance.CreateLogger<SettingsManager>();
@@ -116,29 +119,31 @@ public class SettingsManagerTests : IDisposable
 
         Assert.True(File.Exists(nestedPath));
         var loaded = manager.Load();
-        Assert.Equal("https://api.cerebras.ai/v1", loaded.LlmApiEndpoint);
+        Assert.Equal(defaults.LlmApiEndpoint, loaded.LlmApiEndpoint);
     }
 
     [Fact]
     public void Load_EmptyFile_ReturnsDefaults()
     {
+        var defaults = new AppSettings();
         File.WriteAllText(_manager.SettingsFilePath, "");
 
         var settings = _manager.Load();
 
-        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
-        Assert.Equal("Ctrl+Alt+Space", settings.TypoFixHotkey);
-        Assert.Equal("Clipboard", settings.DictationOutputMode);
+        Assert.Equal(defaults.LlmApiEndpoint, settings.LlmApiEndpoint);
+        Assert.Equal(defaults.TypoFixHotkey, settings.TypoFixHotkey);
+        Assert.Equal(defaults.DictationOutputMode, settings.DictationOutputMode);
     }
 
     [Fact]
     public void Load_YamlNullValues_ReturnsDefaults()
     {
+        var defaults = new AppSettings();
         File.WriteAllText(_manager.SettingsFilePath, "LlmApiEndpoint: ~\nLlmModelName: null\n");
 
         var settings = _manager.Load();
 
-        Assert.Equal("https://api.cerebras.ai/v1", settings.LlmApiEndpoint);
-        Assert.Equal("llama-4-scout-17b-16e-instruct", settings.LlmModelName);
+        Assert.Equal(defaults.LlmApiEndpoint, settings.LlmApiEndpoint);
+        Assert.Equal(defaults.LlmModelName, settings.LlmModelName);
     }
 }
