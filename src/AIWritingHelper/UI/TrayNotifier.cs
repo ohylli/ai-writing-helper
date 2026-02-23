@@ -11,8 +11,12 @@ internal sealed class TrayNotifier : ITrayNotifier
         _trayContext = trayContext;
     }
 
-    public void ShowNotification(string title, string message)
-    {
-        _trayContext.NotifyIcon.ShowBalloonTip(5000, title, message, ToolTipIcon.Info);
-    }
+    public void ShowNotification(string title, string message) =>
+        ShowBalloonTip(title, message, ToolTipIcon.Info);
+
+    public void ShowError(string title, string message) =>
+        ShowBalloonTip(title, message, ToolTipIcon.Error);
+
+    private void ShowBalloonTip(string title, string message, ToolTipIcon icon) =>
+        _trayContext.NotifyIcon.ShowBalloonTip(5000, title, message, icon);
 }

@@ -1,3 +1,5 @@
+using System.Runtime.ExceptionServices;
+
 namespace AIWritingHelper.Core;
 
 internal sealed class ClipboardService : IClipboardService
@@ -25,7 +27,7 @@ internal sealed class ClipboardService : IClipboardService
             return action();
 
         T result = default!;
-        Exception? caught = null;
+        ExceptionDispatchInfo? caught = null;
 
         var thread = new Thread(() =>
         {
@@ -35,15 +37,14 @@ internal sealed class ClipboardService : IClipboardService
             }
             catch (Exception ex)
             {
-                caught = ex;
+                caught = ExceptionDispatchInfo.Capture(ex);
             }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
 
-        if (caught is not null)
-            throw caught;
+        caught?.Throw();
 
         return result;
     }

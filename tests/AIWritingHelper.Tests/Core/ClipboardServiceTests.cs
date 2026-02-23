@@ -38,4 +38,27 @@ public class ClipboardServiceTests
         var result = _service.GetText();
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task SetText_GetText_RoundTrip_FromMtaThread()
+    {
+        const string expected = "Hello from MTA!";
+        await Task.Run(() =>
+        {
+            Assert.NotEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+            _service.SetText(expected);
+            var result = _service.GetText();
+            Assert.Equal(expected, result);
+        });
+    }
+
+    [Fact]
+    public async Task SetText_Null_ThrowsArgumentNullException_FromMtaThread()
+    {
+        await Task.Run(() =>
+        {
+            Assert.NotEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+            Assert.Throws<ArgumentNullException>(() => _service.SetText(null!));
+        });
+    }
 }
