@@ -43,14 +43,14 @@ Build the settings infrastructure — everything else depends on it.
 
 Define the abstractions and build the sound/notification feedback system.
 
-- [ ] `Core/ILLMProvider.cs` — `Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)`
-- [ ] `Core/ISTTProvider.cs` — `Task<string> TranscribeAsync(Stream audio, CancellationToken ct)` (interface only for now)
-- [ ] `Core/IClipboardService.cs` — `string? GetText()`, `void SetText(string text)` (abstraction over WinForms clipboard for testability)
+- [x] `Core/ILLMProvider.cs` — `Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)`
+- [x] `Core/ISTTProvider.cs` — `Task<string> TranscribeAsync(Stream audio, CancellationToken ct)` (interface only for now)
+- [x] `Core/IClipboardService.cs` — `string? GetText()`, `void SetText(string text)` (abstraction over WinForms clipboard for testability)
   - **Note:** WinForms clipboard access must happen on the STA thread. The implementation must marshal calls to the UI thread.
-- [ ] `Core/ISoundPlayer.cs` — `void PlaySuccess()`, `void PlayError()`, `void PlayRecordingStart()`, `void PlayRecordingStop()`
-- [ ] `Core/ITrayNotifier.cs` — `void ShowNotification(string title, string message)`
-- [ ] `Audio/SystemSoundPlayer.cs` — implementation using Windows system sounds (`SystemSounds.Asterisk`, `.Hand`, etc.)
-- [ ] `UI/TrayNotifier.cs` — implementation using `NotifyIcon.ShowBalloonTip()`
+- [x] `Core/ISoundPlayer.cs` — `void PlaySuccess()`, `void PlayError()`, `void PlayRecordingStart()`, `void PlayRecordingStop()`
+- [x] `Core/ITrayNotifier.cs` — `void ShowNotification(string title, string message)`
+- [x] `Audio/SystemSoundPlayer.cs` — implementation using Windows system sounds (`SystemSounds.Asterisk`, `.Hand`, etc.)
+- [x] `UI/TrayNotifier.cs` — implementation using `NotifyIcon.ShowBalloonTip()`
 
 ---
 
