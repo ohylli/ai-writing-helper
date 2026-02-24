@@ -6,6 +6,7 @@ using Serilog.Events;
 using AIWritingHelper.Audio;
 using AIWritingHelper.Config;
 using AIWritingHelper.Core;
+using AIWritingHelper.Services;
 using AIWritingHelper.UI;
 
 namespace AIWritingHelper;
@@ -71,6 +72,8 @@ internal static class Program
             services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
             services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddSingleton<ITrayNotifier, TrayNotifier>();
+            services.AddSingleton<HttpClient>();
+            services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
             using var provider = services.BuildServiceProvider();
 
             Application.Run(provider.GetRequiredService<TrayApplicationContext>());
