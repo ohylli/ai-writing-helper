@@ -72,8 +72,7 @@ internal static class Program
             services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
             services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddSingleton<ITrayNotifier, TrayNotifier>();
-            services.AddSingleton<HttpClient>();
-            services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
+            services.AddHttpClient<ILLMProvider, OpenAICompatibleLLMProvider>();
             using var provider = services.BuildServiceProvider();
 
             Application.Run(provider.GetRequiredService<TrayApplicationContext>());

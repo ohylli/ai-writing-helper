@@ -39,6 +39,16 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
 
     public async Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(systemPrompt);
+
+        if (string.IsNullOrWhiteSpace(_settings.LlmApiEndpoint))
+            throw new InvalidOperationException("LLM API endpoint is not configured");
+        if (string.IsNullOrWhiteSpace(_settings.LlmApiKey))
+            throw new InvalidOperationException("LLM API key is not configured");
+        if (string.IsNullOrWhiteSpace(_settings.LlmModelName))
+            throw new InvalidOperationException("LLM model name is not configured");
+
         var url = _settings.LlmApiEndpoint.TrimEnd('/') + "/chat/completions";
 
         var request = new ChatRequest
@@ -78,8 +88,9 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync(linkedCts.Token);
+                _logger.LogWarning("LLM API error {StatusCode}: {ErrorBody}", (int)response.StatusCode, body);
                 throw new HttpRequestException(
-                    $"LLM API returned {(int)response.StatusCode} {response.StatusCode}: {body}");
+                    $"LLM API returned {(int)response.StatusCode} {response.StatusCode}");
             }
 
             var responseJson = await response.Content.ReadAsStringAsync(linkedCts.Token);
@@ -119,7 +130,7 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
         public List<ChatMessage> Messages { get; set; } = [];
 
         [JsonPropertyName("temperature")]
-        public int Temperature { get; set; }
+        public double Temperature { get; set; }
 
         [JsonPropertyName("stream")]
         public bool Stream { get; set; }

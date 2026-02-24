@@ -69,7 +69,7 @@ public class OpenAICompatibleLLMProviderTests
         var body = JsonDocument.Parse(handler.LastRequestBody!);
         var root = body.RootElement;
         Assert.Equal("test-model", root.GetProperty("model").GetString());
-        Assert.Equal(0, root.GetProperty("temperature").GetInt32());
+        Assert.Equal(0.0, root.GetProperty("temperature").GetDouble());
         Assert.False(root.GetProperty("stream").GetBoolean());
 
         var messages = root.GetProperty("messages");
@@ -147,6 +147,87 @@ public class OpenAICompatibleLLMProviderTests
             () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
 
         Assert.Contains("no choices", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task FixTextAsync_InvalidText_ThrowsArgumentException(string? text)
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(
+            () => provider.FixTextAsync(text!, "prompt", CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task FixTextAsync_InvalidSystemPrompt_ThrowsArgumentException(string? prompt)
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(
+            () => provider.FixTextAsync("some text", prompt!, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task FixTextAsync_MissingApiEndpoint_ThrowsInvalidOperationException()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var settings = DefaultSettings();
+        settings.LlmApiEndpoint = "";
+        var provider = CreateProvider(settings, handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
+
+        Assert.Contains("endpoint", ex.Message);
+    }
+
+    [Fact]
+    public async Task FixTextAsync_MissingApiKey_ThrowsInvalidOperationException()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var settings = DefaultSettings();
+        settings.LlmApiKey = "";
+        var provider = CreateProvider(settings, handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
+
+        Assert.Contains("API key", ex.Message);
+    }
+
+    [Fact]
+    public async Task FixTextAsync_MissingModelName_ThrowsInvalidOperationException()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var settings = DefaultSettings();
+        settings.LlmModelName = "";
+        var provider = CreateProvider(settings, handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
+
+        Assert.Contains("model name", ex.Message);
+    }
+
+    [Fact]
+    public async Task FixTextAsync_HttpError_DoesNotLeakResponseBody()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.Unauthorized, """{"error":"secret info"}""");
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(
+            () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
+
+        Assert.Contains("401", ex.Message);
+        Assert.DoesNotContain("secret info", ex.Message);
     }
 
     [Fact]
