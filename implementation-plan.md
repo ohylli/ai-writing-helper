@@ -58,13 +58,13 @@ Define the abstractions and build the sound/notification feedback system.
 
 Implement the OpenAI-compatible API client.
 
-- [ ] `Services/OpenAICompatibleLLMProvider.cs` — implements `ILLMProvider`
+- [x] `Services/OpenAICompatibleLLMProvider.cs` — implements `ILLMProvider`
   - `HttpClient` with configurable base URL, API key (Bearer token), model name
   - Base URL is expected to include the version prefix (e.g., `https://api.cerebras.ai/v1`). The provider appends `/chat/completions` to the base URL.
   - Parse response, extract assistant message content
   - 30-second timeout via `CancellationTokenSource`
   - Proper error handling (HTTP errors, JSON parse errors, timeout)
-- [ ] Unit tests with mocked `HttpMessageHandler`: success, API error, timeout, malformed response
+- [x] Unit tests with mocked `HttpMessageHandler`: success, API error, timeout, malformed response
 
 ---
 

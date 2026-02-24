@@ -59,9 +59,11 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1-3 are complete. The app runs as a system tray icon with single-instance enforcement, Serilog logging, and YAML-based settings persistence (`AppSettings` + `SettingsManager` in `Config/`). Settings are loaded at startup and registered in DI.
+Phases 1-4 are complete. The app runs as a system tray icon with single-instance enforcement, Serilog logging, and YAML-based settings persistence (`AppSettings` + `SettingsManager` in `Config/`). Settings are loaded at startup and registered in DI.
 
-Phase 3 added core abstraction interfaces (`ILLMProvider`, `ISTTProvider`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier` in `Core/`) and their implementations: `SystemSoundPlayer` (Audio/), `ClipboardService` (Core/), and `TrayNotifier` (UI/). All three are registered in DI. `ILLMProvider` and `ISTTProvider` have no implementations yet — those come in Phases 4 and 10. Next up: Phase 4.
+Phase 3 added core abstraction interfaces (`ILLMProvider`, `ISTTProvider`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier` in `Core/`) and their implementations: `SystemSoundPlayer` (Audio/), `ClipboardService` (Core/), and `TrayNotifier` (UI/). All three are registered in DI.
+
+Phase 4 added `OpenAICompatibleLLMProvider` (Services/) implementing `ILLMProvider`. It uses the OpenAI chat completions format with configurable endpoint/model/API key from `AppSettings`, 30s timeout via linked `CancellationTokenSource`, and nested private JSON model classes. Registered in DI along with `HttpClient`. `ISTTProvider` has no implementation yet — that comes in Phase 10. Next up: Phase 5.
 
 ## Implementation Plan
 
