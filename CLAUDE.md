@@ -13,9 +13,14 @@ The complete design specification is in `design.md`.
 ```bash
 dotnet build          # Build the solution
 dotnet run --project src/AIWritingHelper   # Run the app
-dotnet test           # Run all tests
+dotnet test --filter "Category!=Integration"   # Run unit tests (default for development)
+dotnet test --filter "Category=Integration"    # Run integration tests (only when explicitly requested)
 dotnet publish src/AIWritingHelper -c Release --self-contained -p:PublishSingleFile=true  # Single-file exe
 ```
+
+**Important:** Only run `dotnet test --filter "Category!=Integration"` during normal development. Integration tests hit real APIs and should only be run when the user explicitly asks for them.
+
+Integration tests require a `.env` file in `tests/AIWritingHelper.Tests/` (copy `.env.example` and add your API key). Tests are skipped automatically if the key is missing.
 
 ## Architecture
 

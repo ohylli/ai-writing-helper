@@ -42,3 +42,6 @@ bld/
 
 ## Test results
 TestResults/
+
+## Local test secrets
+.env

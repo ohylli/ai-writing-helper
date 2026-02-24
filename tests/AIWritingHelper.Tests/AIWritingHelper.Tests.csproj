@@ -9,14 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Include="xunit" Version="2.*" />
+    <PackageReference Include="xunit.analyzers" Version="*">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
+    <PackageReference Include="Xunit.SkippableFact" Version="*" />
     <PackageReference Include="Xunit.StaFact" Version="1.*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AIWritingHelper\AIWritingHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".env" Condition="Exists('.env')" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
