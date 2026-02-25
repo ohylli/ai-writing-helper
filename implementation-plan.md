@@ -72,14 +72,14 @@ Implement the OpenAI-compatible API client.
 
 The core workflow that ties clipboard, LLM, sound, and notifications together.
 
-- [ ] `Core/TypoFixService.cs`
+- [x] `Core/TypoFixService.cs`
   - Read clipboard text → validate non-empty
   - Call LLM provider with system prompt from settings
   - Write corrected text back to clipboard
   - Play success sound
   - On error: play error sound + show tray notification with description
-- [ ] `Core/OperationLock.cs` — ensures only one operation (typo fix or dictation) runs at a time; returns busy status if locked
-- [ ] Unit tests: happy path, empty clipboard, API failure, busy rejection
+- [x] `Core/OperationLock.cs` — ensures only one operation (typo fix or dictation) runs at a time; returns busy status if locked
+- [x] Unit tests: happy path, empty clipboard, API failure, busy rejection
 
 ---
 
