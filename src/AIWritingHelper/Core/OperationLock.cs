@@ -1,6 +1,6 @@
 namespace AIWritingHelper.Core;
 
-public class OperationLock
+public class OperationLock : IDisposable
 {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
@@ -10,5 +10,20 @@ public class OperationLock
     /// </summary>
     public bool TryAcquire() => _semaphore.Wait(0);
 
-    public void Release() => _semaphore.Release();
+    /// <summary>
+    /// Releases the lock. Idempotent — safe to call even if not currently held.
+    /// </summary>
+    public void Release()
+    {
+        try
+        {
+            _semaphore.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+            // Already released — ignore to make Release() idempotent.
+        }
+    }
+
+    public void Dispose() => _semaphore.Dispose();
 }

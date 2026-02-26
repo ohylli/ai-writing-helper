@@ -13,26 +13,26 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
     private readonly AppSettings _settings;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<OpenAICompatibleLLMProvider> _logger;
     private readonly TimeSpan _timeout;
 
     public OpenAICompatibleLLMProvider(
         AppSettings settings,
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         ILogger<OpenAICompatibleLLMProvider> logger)
-        : this(settings, httpClient, logger, DefaultTimeout)
+        : this(settings, httpClientFactory, logger, DefaultTimeout)
     {
     }
 
     internal OpenAICompatibleLLMProvider(
         AppSettings settings,
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         ILogger<OpenAICompatibleLLMProvider> logger,
         TimeSpan timeout)
     {
         _settings = settings;
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
         _timeout = timeout;
     }
@@ -73,10 +73,11 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
 
         _logger.LogDebug("Sending LLM request to {Url} with model {Model}", url, _settings.LlmModelName);
 
+        var client = _httpClientFactory.CreateClient();
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.SendAsync(httpRequest, linkedCts.Token);
+            response = await client.SendAsync(httpRequest, linkedCts.Token);
         }
         catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
         {

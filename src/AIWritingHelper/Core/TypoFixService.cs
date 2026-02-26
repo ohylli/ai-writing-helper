@@ -70,6 +70,9 @@ public class TypoFixService
             {
                 TimeoutException => "Request timed out",
                 HttpRequestException => "Could not reach the LLM service",
+                // Currently only LLM provider throws these with user-friendly messages.
+                // If other sources start throwing InvalidOperationException, consider
+                // introducing a dedicated exception type to avoid leaking internal details.
                 InvalidOperationException => ex.Message,
                 _ => "Unexpected error",
             };

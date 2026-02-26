@@ -28,9 +28,14 @@ public class OpenAICompatibleLLMProviderIntegrationTests
     private static OpenAICompatibleLLMProvider CreateProvider(string apiKey)
     {
         var settings = new AppSettings { LlmApiKey = apiKey };
-        var httpClient = new HttpClient();
+        var factory = new SimpleHttpClientFactory();
         var logger = NullLoggerFactory.Instance.CreateLogger<OpenAICompatibleLLMProvider>();
-        return new OpenAICompatibleLLMProvider(settings, httpClient, logger);
+        return new OpenAICompatibleLLMProvider(settings, factory, logger);
+    }
+
+    private sealed class SimpleHttpClientFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new();
     }
 
     [SkippableFact]

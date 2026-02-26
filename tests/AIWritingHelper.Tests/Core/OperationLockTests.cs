@@ -30,5 +30,26 @@ public class OperationLockTests
         lk.Release();
 
         Assert.True(lk.TryAcquire());
+        lk.Release();
+    }
+
+    [Fact]
+    public void Release_WhenNotHeld_DoesNotThrow()
+    {
+        var lk = new OperationLock();
+
+        // Double release should be idempotent
+        lk.TryAcquire();
+        lk.Release();
+        lk.Release();
+    }
+
+    [Fact]
+    public void Dispose_DisposesUnderlyingSemaphore()
+    {
+        var lk = new OperationLock();
+        lk.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => lk.TryAcquire());
     }
 }

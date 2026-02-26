@@ -35,9 +35,9 @@ public class OpenAICompatibleLLMProviderTests
         FakeHttpMessageHandler handler,
         TimeSpan? timeout = null)
     {
-        var httpClient = new HttpClient(handler);
+        var factory = new FakeHttpClientFactory(handler);
         var logger = NullLoggerFactory.Instance.CreateLogger<OpenAICompatibleLLMProvider>();
-        return new OpenAICompatibleLLMProvider(settings, httpClient, logger, timeout ?? TimeSpan.FromSeconds(5));
+        return new OpenAICompatibleLLMProvider(settings, factory, logger, timeout ?? TimeSpan.FromSeconds(5));
     }
 
     [Fact]
@@ -241,6 +241,11 @@ public class OpenAICompatibleLLMProviderTests
             () => provider.FixTextAsync("text", "prompt", CancellationToken.None));
 
         Assert.Contains("empty content", ex.Message);
+    }
+
+    private sealed class FakeHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new(handler);
     }
 
     private sealed class FakeHttpMessageHandler : HttpMessageHandler
