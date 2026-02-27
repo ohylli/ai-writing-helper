@@ -64,13 +64,15 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1-5 are complete. The app runs as a system tray icon with single-instance enforcement, Serilog logging, and YAML-based settings persistence (`AppSettings` + `SettingsManager` in `Config/`). Settings are loaded at startup and registered in DI.
+Phases 1-6 are complete. The typo fix feature is fully wired end-to-end: Ctrl+Alt+Space triggers clipboard text → LLM API → corrected text back to clipboard → success sound, all from the system tray.
 
 Phase 3 added core abstraction interfaces (`ILLMProvider`, `ISTTProvider`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier` in `Core/`) and their implementations: `SystemSoundPlayer` (Audio/), `ClipboardService` (Core/), and `TrayNotifier` (UI/). All three are registered in DI.
 
 Phase 4 added `OpenAICompatibleLLMProvider` (Services/) implementing `ILLMProvider`. It uses the OpenAI chat completions format with configurable endpoint/model/API key from `AppSettings`, 30s timeout via linked `CancellationTokenSource`, and nested private JSON model classes. Registered in DI along with `HttpClient`. `ISTTProvider` has no implementation yet — that comes in Phase 10.
 
-Phase 5 added `OperationLock` (Core/) — a `SemaphoreSlim(1,1)` concurrency guard shared by typo fix and later dictation — and `TypoFixService` (Core/) which orchestrates the full typo-fix workflow: acquire lock → read clipboard → call LLM → write result → play success sound. Handles all error cases (empty clipboard, busy lock, timeout, HTTP errors, cancellation) with appropriate sounds, notifications, and logging. Lock is always released in `finally`. Both registered as singletons in DI. Next up: Phase 6.
+Phase 5 added `OperationLock` (Core/) — a `SemaphoreSlim(1,1)` concurrency guard shared by typo fix and later dictation — and `TypoFixService` (Core/) which orchestrates the full typo-fix workflow: acquire lock → read clipboard → call LLM → write result → play success sound. Handles all error cases (empty clipboard, busy lock, timeout, HTTP errors, cancellation) with appropriate sounds, notifications, and logging. Lock is always released in `finally`. Both registered as singletons in DI.
+
+Phase 6 added `GlobalHotkeyManager` (Core/) — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke with a private `NativeWindow` subclass for `WM_HOTKEY` messages, `MOD_NOREPEAT` for accessibility, and a `ParseHotkey` string parser. `TrayApplicationContext` (UI/) now wires hotkey events to `TypoFixService` (Ctrl+Alt+Space) and a dictation stub (Ctrl+Alt+D). `TypoFixService` is injected as `Lazy<TypoFixService>` to break a circular DI dependency (TrayApplicationContext → TypoFixService → ITrayNotifier → TrayApplicationContext). Next up: Phase 7.
 
 ## Implementation Plan
 

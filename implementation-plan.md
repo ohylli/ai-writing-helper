@@ -87,16 +87,16 @@ The core workflow that ties clipboard, LLM, sound, and notifications together.
 
 Wire up hotkey registration and the tray icon.
 
-- [ ] `Core/GlobalHotkeyManager.cs` — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke, modifier+key format
-  - Register configured hotkey for typo fix
-  - Handle `WM_HOTKEY` messages
-  - **Note:** `RegisterHotKey` delivers `WM_HOTKEY` to a specific window handle. The implementation needs an HWND — typically a hidden `NativeWindow` or the form handle. Decide on exact approach during implementation.
+- [x] `Core/GlobalHotkeyManager.cs` — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke, modifier+key format
+  - Private `HotkeyWindow` (`NativeWindow` subclass) receives `WM_HOTKEY` messages
+  - `ParseHotkey(string)` parses "Ctrl+Alt+Space" format into modifiers + virtual key code
+  - `MOD_NOREPEAT` prevents repeat when held (important for accessibility)
   - Error handling for conflicts (hotkey already registered by another app)
-- [ ] `UI/TrayApplicationContext.cs` — `ApplicationContext` subclass
+- [x] `UI/TrayApplicationContext.cs` — `ApplicationContext` subclass
   - `NotifyIcon` with icon and context menu (Settings, Quit)
-  - Receives hotkey events, triggers `TypoFixService`
+  - Receives hotkey events, triggers `TypoFixService` via `Lazy<T>` (breaks circular DI dependency)
   - Shows startup notification if hotkey registration fails
-- [ ] Wire into `Program.cs` with DI
+- [x] Wire into `Program.cs` with DI
 
 ---
 

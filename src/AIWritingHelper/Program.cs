@@ -76,6 +76,10 @@ internal static class Program
             services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
             services.AddSingleton<OperationLock>();
             services.AddSingleton<TypoFixService>();
+            // Lazy<T> breaks a circular DI dependency: TrayApplicationContext → TypoFixService
+            // → ITrayNotifier → TrayApplicationContext. Resolved lazily on first hotkey press.
+            services.AddSingleton(sp => new Lazy<TypoFixService>(sp.GetRequiredService<TypoFixService>));
+            services.AddSingleton<GlobalHotkeyManager>();
             using var provider = services.BuildServiceProvider();
 
             Application.Run(provider.GetRequiredService<TrayApplicationContext>());
