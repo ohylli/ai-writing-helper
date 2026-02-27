@@ -1,14 +1,13 @@
+using AIWritingHelper.Core;
 using Microsoft.Extensions.Logging;
 
 namespace AIWritingHelper.UI;
 
-internal sealed class TrayApplicationContext : ApplicationContext
+internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _contextMenu;
     private readonly ILogger<TrayApplicationContext> _logger;
-
-    internal NotifyIcon NotifyIcon => _notifyIcon;
 
     public TrayApplicationContext(ILogger<TrayApplicationContext> logger)
     {
@@ -34,6 +33,12 @@ internal sealed class TrayApplicationContext : ApplicationContext
 
         _logger.LogInformation("Tray icon created");
     }
+
+    public void ShowNotification(string title, string message) =>
+        _notifyIcon.ShowBalloonTip(5000, title, message, ToolTipIcon.Info);
+
+    public void ShowError(string title, string message) =>
+        _notifyIcon.ShowBalloonTip(5000, title, message, ToolTipIcon.Error);
 
     protected override void Dispose(bool disposing)
     {
