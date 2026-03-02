@@ -78,7 +78,10 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         {
             case GlobalHotkeyManager.TypoFixHotkeyId:
                 _logger.LogDebug("Typo fix hotkey pressed");
-                _ = _typoFixService.Value.ExecuteAsync(_appCts.Token);
+                var task = _typoFixService.Value.ExecuteAsync(_appCts.Token);
+                _ = task.ContinueWith(
+                    t => _logger.LogError(t.Exception, "Unhandled exception in typo fix"),
+                    TaskContinuationOptions.OnlyOnFaulted);
                 break;
 
             case GlobalHotkeyManager.DictationHotkeyId:
@@ -98,7 +101,6 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         if (disposing)
         {
             _hotkeyManager.HotkeyPressed -= OnHotkeyPressed;
-            _hotkeyManager.UnregisterAll();
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
             _contextMenu.Dispose();

@@ -24,6 +24,7 @@ public sealed class GlobalHotkeyManager : IDisposable
     private readonly ILogger<GlobalHotkeyManager> _logger;
     private readonly HotkeyWindow _window;
     private readonly HashSet<int> _registeredIds = new();
+    private bool _disposed;
 
     public event EventHandler<HotkeyPressedEventArgs>? HotkeyPressed;
 
@@ -35,6 +36,9 @@ public sealed class GlobalHotkeyManager : IDisposable
 
     public bool Register(int id, string hotkeyString)
     {
+        if (_registeredIds.Contains(id))
+            throw new InvalidOperationException($"Hotkey ID {id} is already registered.");
+
         var (modifiers, vk) = ParseHotkey(hotkeyString);
         modifiers |= MOD_NOREPEAT;
 
@@ -90,6 +94,8 @@ public sealed class GlobalHotkeyManager : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         UnregisterAll();
         _window.DestroyHandle();
     }
