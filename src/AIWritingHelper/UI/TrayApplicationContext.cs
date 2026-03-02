@@ -1,6 +1,7 @@
 using AIWritingHelper.Config;
 using AIWritingHelper.Core;
 using Microsoft.Extensions.Logging;
+using Serilog.Core;
 
 namespace AIWritingHelper.UI;
 
@@ -13,18 +14,36 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
     // Lazy to break circular DI: this class → TypoFixService → ITrayNotifier → this class.
     private readonly Lazy<TypoFixService> _typoFixService;
     private readonly CancellationTokenSource _appCts;
+    private readonly AppSettings _settings;
+    private readonly SettingsManager _settingsManager;
+    private readonly LoggingLevelSwitch _levelSwitch;
+    private readonly ILLMProvider _llmProvider;
+    private readonly ILoggerFactory _loggerFactory;
+    private SettingsForm? _settingsForm;
 
     public TrayApplicationContext(
         ILogger<TrayApplicationContext> logger,
         GlobalHotkeyManager hotkeyManager,
         Lazy<TypoFixService> typoFixService,
         AppSettings appSettings,
-        CancellationTokenSource appCts)
+        CancellationTokenSource appCts,
+        SettingsManager settingsManager,
+        LoggingLevelSwitch levelSwitch,
+        ILLMProvider llmProvider,
+        ILoggerFactory loggerFactory)
     {
         _logger = logger;
         _hotkeyManager = hotkeyManager;
         _typoFixService = typoFixService;
         _appCts = appCts;
+        _settings = appSettings;
+        _settingsManager = settingsManager;
+        _levelSwitch = levelSwitch;
+        _llmProvider = llmProvider;
+        _loggerFactory = loggerFactory;
+
+        var settingsItem = new ToolStripMenuItem("Settings");
+        settingsItem.Click += OnSettingsClick;
 
         var quitItem = new ToolStripMenuItem("Quit");
         quitItem.Click += (_, _) =>
@@ -34,6 +53,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         };
 
         _contextMenu = new ContextMenuStrip();
+        _contextMenu.Items.Add(settingsItem);
+        _contextMenu.Items.Add(new ToolStripSeparator());
         _contextMenu.Items.Add(quitItem);
 
         _notifyIcon = new NotifyIcon
@@ -45,7 +66,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         };
 
         _hotkeyManager.HotkeyPressed += OnHotkeyPressed;
-        RegisterHotkeys(appSettings);
+        RegisterHotkeys(_settings);
 
         _logger.LogInformation("Tray icon created");
     }
@@ -88,6 +109,26 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
                 _logger.LogDebug("Dictation hotkey pressed (not yet implemented)");
                 break;
         }
+    }
+
+    private void OnSettingsClick(object? sender, EventArgs e)
+    {
+        if (_settingsForm is { IsDisposed: false })
+        {
+            _settingsForm.Activate();
+            return;
+        }
+
+        _settingsForm = new SettingsForm(
+            _settings,
+            _settingsManager,
+            _levelSwitch,
+            _llmProvider,
+            _loggerFactory.CreateLogger<SettingsForm>());
+
+        _settingsForm.ShowDialog();
+        _settingsForm.Dispose();
+        _settingsForm = null;
     }
 
     public void ShowNotification(string title, string message) =>

@@ -102,19 +102,17 @@ Wire up hotkey registration and the tray icon.
 
 ## Phase 7: Settings GUI (General + Typo Fixing tabs)
 
-- [ ] `UI/SettingsForm.cs` — WinForms `Form` with `TabControl`
-  - **General tab:** hotkey config for typo fix (and dictation placeholder), start-with-Windows checkbox, log level dropdown
-    - Hotkey configuration UX TBD — decide during implementation whether to use a key-capture control or another approach (key-capture is likely more accessible for a blind user)
-  - **Typo Fixing tab:** API endpoint URL, API key (password masked), model name, "Test Connection" button, system prompt multi-line textbox (shows default, fully editable)
-  - **Dictation tab:** placeholder controls (filled in Phase 12)
-- [ ] Accessibility: every control has `AccessibleName`/`AccessibleDescription`, logical tab order, keyboard-navigable
-- [ ] Save/Cancel buttons, load current settings on open, save to `SettingsManager`
-- [ ] "Test Connection" calls the LLM with a trivial test prompt, shows success/failure
-- [ ] Hot-reload after saving settings — the dialog mutates the existing `AppSettings` singleton directly (all services share the same reference, so changes are visible immediately):
-  - **Hotkeys:** The dialog calls `GlobalHotkeyManager` directly to re-register before saving. If registration fails, show an error in the dialog and let the user pick a different key — don't save the broken hotkey.
-  - **Log level:** The dialog updates `LoggingLevelSwitch.MinimumLevel` directly (it's a DI singleton designed for this).
-  - **API keys, model names, system prompt, etc.:** Just save — these are read on the next API call, no notification needed.
-- [ ] Start-with-Windows implementation: add/remove registry entry in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` based on the checkbox setting
+- [x] `UI/SettingsForm.cs` — WinForms `Form` with `TabControl`, programmatic layout (no designer), 500×480, `FixedDialog`
+  - **General tab:** log level dropdown (`ComboBox` DropDownList), read-only hotkey display for typo fix and dictation
+  - **Typo Fixing tab:** API endpoint, API key (password masked), model name, "Test Connection" button, system prompt multi-line textbox with `AcceptsReturn` and vertical scrollbar
+  - **Dictation tab:** placeholder label ("Dictation settings will be available in a future update.")
+- [x] Accessibility: every control has `AccessibleName`/`AccessibleDescription`, logical tab order, keyboard-navigable
+- [x] Save (Alt+S) / Cancel (Alt+C) buttons with `AcceptButton`/`CancelButton` wiring (Enter saves, Escape cancels)
+- [x] `PopulateFromSettings` loads current `AppSettings` values on open; `OnSaveClick` writes back and persists via `SettingsManager`
+- [x] "Test Connection" snapshots current settings, temporarily applies form values, calls `FixTextAsync`, restores originals in `finally`
+- [x] Hot-reload: log level updated via `LoggingLevelSwitch.MinimumLevel`; API settings read from `AppSettings` on next call (no explicit reload needed)
+- [x] `TrayApplicationContext` updated: new DI deps (`SettingsManager`, `LoggingLevelSwitch`, `ILLMProvider`, `ILoggerFactory`), Settings menu item before separator before Quit, single-instance `SettingsForm` guard
+- **Deferred:** hotkey capture/re-registration UI, Start with Windows checkbox
 
 ---
 
