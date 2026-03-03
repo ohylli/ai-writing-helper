@@ -37,23 +37,32 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
         _timeout = timeout;
     }
 
-    public async Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)
+    public Task<string> FixTextAsync(string text, string systemPrompt, CancellationToken ct)
+        => FixTextCoreAsync(text, systemPrompt, _settings.LlmApiEndpoint, _settings.LlmApiKey, _settings.LlmModelName, ct);
+
+    public Task<string> FixTextAsync(string text, string systemPrompt, string apiEndpoint, string apiKey, string modelName, CancellationToken ct)
+        => FixTextCoreAsync(text, systemPrompt, apiEndpoint, apiKey, modelName, ct);
+
+    private async Task<string> FixTextCoreAsync(
+        string text, string systemPrompt,
+        string apiEndpoint, string apiKey, string modelName,
+        CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         ArgumentException.ThrowIfNullOrWhiteSpace(systemPrompt);
 
-        if (string.IsNullOrWhiteSpace(_settings.LlmApiEndpoint))
+        if (string.IsNullOrWhiteSpace(apiEndpoint))
             throw new InvalidOperationException("LLM API endpoint is not configured");
-        if (string.IsNullOrWhiteSpace(_settings.LlmApiKey))
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("LLM API key is not configured");
-        if (string.IsNullOrWhiteSpace(_settings.LlmModelName))
+        if (string.IsNullOrWhiteSpace(modelName))
             throw new InvalidOperationException("LLM model name is not configured");
 
-        var url = _settings.LlmApiEndpoint.TrimEnd('/') + "/chat/completions";
+        var url = apiEndpoint.TrimEnd('/') + "/chat/completions";
 
         var request = new ChatRequest
         {
-            Model = _settings.LlmModelName,
+            Model = modelName,
             Messages =
             [
                 new ChatMessage { Role = "system", Content = systemPrompt },
@@ -66,12 +75,12 @@ internal sealed class OpenAICompatibleLLMProvider : ILLMProvider
         var json = JsonSerializer.Serialize(request);
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
         httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
-        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.LlmApiKey);
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         using var timeoutCts = new CancellationTokenSource(_timeout);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
 
-        _logger.LogDebug("Sending LLM request to {Url} with model {Model}", url, _settings.LlmModelName);
+        _logger.LogDebug("Sending LLM request to {Url} with model {Model}", url, modelName);
 
         var client = _httpClientFactory.CreateClient();
         HttpResponseMessage response;

@@ -20,4 +20,20 @@ public class AppSettings
     public string LogLevel { get; set; } = "Information";
     public string MicrophoneDeviceName { get; set; } = "";
     public string DictationOutputMode { get; set; } = "Clipboard";
+
+    public void CopyFrom(AppSettings source)
+    {
+        LlmApiEndpoint = source.LlmApiEndpoint;
+        LlmApiKey = source.LlmApiKey;
+        LlmModelName = source.LlmModelName;
+        LlmSystemPrompt = source.LlmSystemPrompt;
+        SttApiKey = source.SttApiKey;
+        SttModelName = source.SttModelName;
+        TypoFixHotkey = source.TypoFixHotkey;
+        DictationHotkey = source.DictationHotkey;
+        StartWithWindows = source.StartWithWindows;
+        LogLevel = source.LogLevel;
+        MicrophoneDeviceName = source.MicrophoneDeviceName;
+        DictationOutputMode = source.DictationOutputMode;
+    }
 }

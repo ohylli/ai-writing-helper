@@ -288,7 +288,8 @@ internal sealed class SettingsForm : Form
         AcceptButton = _saveButton;
         CancelButton = _cancelButton;
 
-        // Add button panel before tab control so it docks at the bottom
+        // WinForms docks controls in reverse collection order: buttonPanel (added last)
+        // docks to the bottom first, then tabControl fills the remaining space.
         Controls.Add(tabControl);
         Controls.Add(buttonPanel);
 
@@ -312,22 +313,19 @@ internal sealed class SettingsForm : Form
 
     private void OnSaveClick(object? sender, EventArgs e)
     {
-        // Write form values back to the shared AppSettings singleton
-        _settings.LogLevel = _logLevelCombo.SelectedItem?.ToString() ?? "Information";
-        _settings.LlmApiEndpoint = _apiEndpointBox.Text;
-        _settings.LlmApiKey = _apiKeyBox.Text;
-        _settings.LlmModelName = _modelNameBox.Text;
-        _settings.LlmSystemPrompt = _systemPromptBox.Text;
+        // Build candidate settings without touching the live singleton
+        var candidate = new AppSettings();
+        candidate.CopyFrom(_settings);
+        candidate.LogLevel = _logLevelCombo.SelectedItem?.ToString() ?? "Information";
+        candidate.LlmApiEndpoint = _apiEndpointBox.Text;
+        candidate.LlmApiKey = _apiKeyBox.Text;
+        candidate.LlmModelName = _modelNameBox.Text;
+        candidate.LlmSystemPrompt = _systemPromptBox.Text;
 
-        // Hot-reload log level
-        if (Enum.TryParse<LogEventLevel>(_settings.LogLevel, ignoreCase: true, out var parsedLevel))
-        {
-            _levelSwitch.MinimumLevel = parsedLevel;
-        }
-
+        // Persist first — if this fails, the live singleton stays untouched
         try
         {
-            _settingsManager.Save(_settings);
+            _settingsManager.Save(candidate);
             _logger.LogInformation("Settings saved via GUI");
         }
         catch (Exception ex)
@@ -341,29 +339,31 @@ internal sealed class SettingsForm : Form
             return;
         }
 
+        // Persistence succeeded — commit to the live singleton
+        _settings.CopyFrom(candidate);
+
+        // Hot-reload log level
+        if (Enum.TryParse<LogEventLevel>(_settings.LogLevel, ignoreCase: true, out var parsedLevel))
+        {
+            _levelSwitch.MinimumLevel = parsedLevel;
+        }
+
         DialogResult = DialogResult.OK;
         Close();
     }
 
     private async void OnTestConnectionClick(object? sender, EventArgs e)
     {
-        // Snapshot current settings
-        var originalEndpoint = _settings.LlmApiEndpoint;
-        var originalKey = _settings.LlmApiKey;
-        var originalModel = _settings.LlmModelName;
-
-        // Temporarily apply form values
-        _settings.LlmApiEndpoint = _apiEndpointBox.Text;
-        _settings.LlmApiKey = _apiKeyBox.Text;
-        _settings.LlmModelName = _modelNameBox.Text;
-
         _testConnectionButton.Enabled = false;
         _testConnectionButton.Text = "Testing...";
 
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            await _llmProvider.FixTextAsync("Hello", "Reply with OK", cts.Token);
+            await _llmProvider.FixTextAsync(
+                "Hello", "Reply with OK",
+                _apiEndpointBox.Text, _apiKeyBox.Text, _modelNameBox.Text,
+                cts.Token);
 
             MessageBox.Show(
                 "Connection successful!",
@@ -382,13 +382,11 @@ internal sealed class SettingsForm : Form
         }
         finally
         {
-            // Restore original settings
-            _settings.LlmApiEndpoint = originalEndpoint;
-            _settings.LlmApiKey = originalKey;
-            _settings.LlmModelName = originalModel;
-
-            _testConnectionButton.Enabled = true;
-            _testConnectionButton.Text = "&Test Connection";
+            if (!IsDisposed)
+            {
+                _testConnectionButton.Enabled = true;
+                _testConnectionButton.Text = "&Test Connection";
+            }
         }
     }
 }

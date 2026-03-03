@@ -133,6 +133,9 @@ public class TypoFixServiceTests
             if (ExceptionToThrow is not null) throw ExceptionToThrow;
             return Task.FromResult(Result);
         }
+
+        public Task<string> FixTextAsync(string text, string systemPrompt, string apiEndpoint, string apiKey, string modelName, CancellationToken ct)
+            => FixTextAsync(text, systemPrompt, ct);
     }
 
     private sealed class FakeSoundPlayer : ISoundPlayer
