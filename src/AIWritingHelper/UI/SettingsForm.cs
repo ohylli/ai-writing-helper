@@ -24,6 +24,9 @@ internal sealed class SettingsForm : Form
 
     // Hotkey capture state
     private TextBox? _captureTargetBox;
+    private Button? _captureSourceButton;
+    private string? _captureOriginalText;
+    private string? _captureOriginalAccessibleName;
 
     // Typo Fixing tab controls
     private readonly TextBox _apiEndpointBox;
@@ -461,43 +464,66 @@ internal sealed class SettingsForm : Form
 
     private void EnterCaptureMode(TextBox targetBox, Button sourceButton)
     {
+        // If already capturing for another hotkey, cancel that first
+        if (_captureTargetBox is not null)
+        {
+            _captureTargetBox.Text = _captureOriginalText ?? "";
+            ExitCaptureMode();
+        }
+
         _captureTargetBox = targetBox;
+        _captureSourceButton = sourceButton;
+        _captureOriginalText = targetBox.Text;
+        _captureOriginalAccessibleName = targetBox.AccessibleName;
 
-        sourceButton.Text = "Press new hotkey...";
-        sourceButton.Enabled = false;
+        sourceButton.Text = "Capturing...";
 
-        // Disable the other set button and save/cancel to prevent interaction during capture
-        _setTypoFixHotkeyButton.Enabled = false;
-        _setDictationHotkeyButton.Enabled = false;
-        _saveButton.Enabled = false;
-        _cancelButton.Enabled = false;
+        targetBox.Text = "";
+        targetBox.AccessibleName = $"Press a new {_captureOriginalAccessibleName} combination, or Escape to cancel";
+        targetBox.Focus();
     }
 
     private void ExitCaptureMode()
     {
-        _captureTargetBox = null;
+        if (_captureTargetBox is not null)
+            _captureTargetBox.AccessibleName = _captureOriginalAccessibleName;
 
-        _setTypoFixHotkeyButton.Text = "Set New Hotkey";
-        _setTypoFixHotkeyButton.Enabled = true;
-        _setDictationHotkeyButton.Text = "Set New Hotkey";
-        _setDictationHotkeyButton.Enabled = true;
-        _saveButton.Enabled = true;
-        _cancelButton.Enabled = true;
+        if (_captureSourceButton is not null)
+            _captureSourceButton.Text = "Set New Hotkey";
+
+        _captureTargetBox = null;
+        _captureSourceButton = null;
+        _captureOriginalText = null;
+        _captureOriginalAccessibleName = null;
+    }
+
+    // ProcessDialogKey runs before CancelButton handling, so we can intercept
+    // Escape during hotkey capture before WinForms closes the dialog.
+    protected override bool ProcessDialogKey(Keys keyData)
+    {
+        if (_captureTargetBox is not null && (keyData & Keys.KeyCode) == Keys.Escape)
+        {
+            _captureTargetBox.Text = _captureOriginalText ?? "";
+            var box = _captureTargetBox;
+            var name = _captureOriginalAccessibleName;
+            ExitCaptureMode();
+            box.Focus();
+
+            box.AccessibilityObject.RaiseAutomationNotification(
+                System.Windows.Forms.Automation.AutomationNotificationKind.ActionAborted,
+                System.Windows.Forms.Automation.AutomationNotificationProcessing.ImportantMostRecent,
+                $"{name} capture cancelled");
+
+            return true; // swallow the key
+        }
+
+        return base.ProcessDialogKey(keyData);
     }
 
     private void OnFormKeyDown(object? sender, KeyEventArgs e)
     {
         if (_captureTargetBox is null)
             return;
-
-        // Escape cancels capture without changing the hotkey
-        if (e.KeyCode == Keys.Escape)
-        {
-            e.Handled = true;
-            e.SuppressKeyPress = true;
-            ExitCaptureMode();
-            return;
-        }
 
         // Ignore standalone modifier key presses — wait for a real key
         if (e.KeyCode is Keys.ControlKey or Keys.ShiftKey or Keys.Menu
@@ -516,8 +542,17 @@ internal sealed class SettingsForm : Form
         e.Handled = true;
         e.SuppressKeyPress = true;
 
-        _captureTargetBox.Text = FormatHotkey(e.Modifiers, e.KeyCode);
+        var hotkeyText = FormatHotkey(e.Modifiers, e.KeyCode);
+        _captureTargetBox.Text = hotkeyText;
+        var capturedBox = _captureTargetBox;
         ExitCaptureMode();
+        capturedBox.Focus();
+
+        // Announce the result to screen readers
+        capturedBox.AccessibilityObject.RaiseAutomationNotification(
+            System.Windows.Forms.Automation.AutomationNotificationKind.ActionCompleted,
+            System.Windows.Forms.Automation.AutomationNotificationProcessing.ImportantMostRecent,
+            $"{capturedBox.AccessibleName} set to {hotkeyText}");
     }
 
     internal static string FormatHotkey(Keys modifiers, Keys keyCode)
