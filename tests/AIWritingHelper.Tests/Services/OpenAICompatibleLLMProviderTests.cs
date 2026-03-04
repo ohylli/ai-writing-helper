@@ -231,6 +231,43 @@ public class OpenAICompatibleLLMProviderTests
     }
 
     [Fact]
+    public async Task FixTextAsync_ExplicitOverload_UsesExplicitParameters()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        // Settings have different values than what we'll pass explicitly
+        var settings = DefaultSettings();
+        var provider = CreateProvider(settings, handler);
+
+        await provider.FixTextAsync(
+            "hello", "Fix typos",
+            "https://explicit.api/v1", "explicit-key", "explicit-model",
+            CancellationToken.None);
+
+        var request = handler.LastRequest!;
+        Assert.Equal("https://explicit.api/v1/chat/completions", request.RequestUri!.ToString());
+        Assert.Equal("explicit-key", request.Headers.Authorization!.Parameter);
+
+        var body = JsonDocument.Parse(handler.LastRequestBody!);
+        Assert.Equal("explicit-model", body.RootElement.GetProperty("model").GetString());
+    }
+
+    [Theory]
+    [InlineData("", "key", "model", "endpoint")]
+    [InlineData("https://api.test/v1", "", "model", "API key")]
+    [InlineData("https://api.test/v1", "key", "", "model name")]
+    public async Task FixTextAsync_ExplicitOverload_EmptyParam_ThrowsInvalidOperationException(
+        string endpoint, string key, string model, string expectedMessage)
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.FixTextAsync("text", "prompt", endpoint, key, model, CancellationToken.None));
+
+        Assert.Contains(expectedMessage, ex.Message);
+    }
+
+    [Fact]
     public async Task FixTextAsync_NullContent_ThrowsInvalidOperationException()
     {
         var handler = new FakeHttpMessageHandler(HttpStatusCode.OK,
