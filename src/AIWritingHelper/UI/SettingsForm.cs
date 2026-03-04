@@ -12,12 +12,18 @@ internal sealed class SettingsForm : Form
     private readonly SettingsManager _settingsManager;
     private readonly LoggingLevelSwitch _levelSwitch;
     private readonly ILLMProvider _llmProvider;
+    private readonly GlobalHotkeyManager _hotkeyManager;
     private readonly ILogger<SettingsForm> _logger;
 
     // General tab controls
     private readonly ComboBox _logLevelCombo;
     private readonly TextBox _typoFixHotkeyBox;
     private readonly TextBox _dictationHotkeyBox;
+    private readonly Button _setTypoFixHotkeyButton;
+    private readonly Button _setDictationHotkeyButton;
+
+    // Hotkey capture state
+    private TextBox? _captureTargetBox;
 
     // Typo Fixing tab controls
     private readonly TextBox _apiEndpointBox;
@@ -35,12 +41,14 @@ internal sealed class SettingsForm : Form
         SettingsManager settingsManager,
         LoggingLevelSwitch levelSwitch,
         ILLMProvider llmProvider,
+        GlobalHotkeyManager hotkeyManager,
         ILogger<SettingsForm> logger)
     {
         _settings = settings;
         _settingsManager = settingsManager;
         _levelSwitch = levelSwitch;
         _llmProvider = llmProvider;
+        _hotkeyManager = hotkeyManager;
         _logger = logger;
 
         Text = "AI Writing Helper Settings";
@@ -49,6 +57,8 @@ internal sealed class SettingsForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         MaximizeBox = false;
         MinimizeBox = false;
+        KeyPreview = true;
+        KeyDown += OnFormKeyDown;
 
         // Tab control
         var tabControl = new TabControl
@@ -62,7 +72,7 @@ internal sealed class SettingsForm : Form
         var generalTab = new TabPage("General")
         {
             AccessibleName = "General settings",
-            AccessibleDescription = "Log level and hotkey display"
+            AccessibleDescription = "Log level and hotkey configuration"
         };
         var generalLayout = new TableLayoutPanel
         {
@@ -93,7 +103,7 @@ internal sealed class SettingsForm : Form
         generalLayout.Controls.Add(logLevelLabel, 0, 0);
         generalLayout.Controls.Add(_logLevelCombo, 1, 0);
 
-        // Typo fix hotkey (read-only)
+        // Typo fix hotkey
         var typoFixHotkeyLabel = new Label
         {
             Text = "Typo fix hotkey:",
@@ -104,14 +114,29 @@ internal sealed class SettingsForm : Form
         _typoFixHotkeyBox = new TextBox
         {
             ReadOnly = true,
-            Width = 200,
+            Width = 160,
             AccessibleName = "Typo fix hotkey",
-            AccessibleDescription = "Current hotkey for typo fixing. Cannot be changed yet."
+            AccessibleDescription = "Current hotkey for typo fixing"
         };
+        _setTypoFixHotkeyButton = new Button
+        {
+            Text = "Set New Hotkey",
+            AutoSize = true,
+            AccessibleName = "Set typo fix hotkey",
+            AccessibleDescription = "Enter capture mode to record a new hotkey for typo fixing"
+        };
+        _setTypoFixHotkeyButton.Click += (_, _) => EnterCaptureMode(_typoFixHotkeyBox, _setTypoFixHotkeyButton);
+        var typoHotkeyPanel = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            WrapContents = false
+        };
+        typoHotkeyPanel.Controls.Add(_typoFixHotkeyBox);
+        typoHotkeyPanel.Controls.Add(_setTypoFixHotkeyButton);
         generalLayout.Controls.Add(typoFixHotkeyLabel, 0, 1);
-        generalLayout.Controls.Add(_typoFixHotkeyBox, 1, 1);
+        generalLayout.Controls.Add(typoHotkeyPanel, 1, 1);
 
-        // Dictation hotkey (read-only)
+        // Dictation hotkey
         var dictationHotkeyLabel = new Label
         {
             Text = "Dictation hotkey:",
@@ -122,12 +147,27 @@ internal sealed class SettingsForm : Form
         _dictationHotkeyBox = new TextBox
         {
             ReadOnly = true,
-            Width = 200,
+            Width = 160,
             AccessibleName = "Dictation hotkey",
-            AccessibleDescription = "Current hotkey for dictation. Cannot be changed yet."
+            AccessibleDescription = "Current hotkey for dictation"
         };
+        _setDictationHotkeyButton = new Button
+        {
+            Text = "Set New Hotkey",
+            AutoSize = true,
+            AccessibleName = "Set dictation hotkey",
+            AccessibleDescription = "Enter capture mode to record a new hotkey for dictation"
+        };
+        _setDictationHotkeyButton.Click += (_, _) => EnterCaptureMode(_dictationHotkeyBox, _setDictationHotkeyButton);
+        var dictationHotkeyPanel = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            WrapContents = false
+        };
+        dictationHotkeyPanel.Controls.Add(_dictationHotkeyBox);
+        dictationHotkeyPanel.Controls.Add(_setDictationHotkeyButton);
         generalLayout.Controls.Add(dictationHotkeyLabel, 0, 2);
-        generalLayout.Controls.Add(_dictationHotkeyBox, 1, 2);
+        generalLayout.Controls.Add(dictationHotkeyPanel, 1, 2);
 
         generalTab.Controls.Add(generalLayout);
 
@@ -317,12 +357,65 @@ internal sealed class SettingsForm : Form
         var candidate = new AppSettings();
         candidate.CopyFrom(_settings);
         candidate.LogLevel = _logLevelCombo.SelectedItem?.ToString() ?? "Information";
+        candidate.TypoFixHotkey = _typoFixHotkeyBox.Text;
+        candidate.DictationHotkey = _dictationHotkeyBox.Text;
         candidate.LlmApiEndpoint = _apiEndpointBox.Text;
         candidate.LlmApiKey = _apiKeyBox.Text;
         candidate.LlmModelName = _modelNameBox.Text;
         candidate.LlmSystemPrompt = _systemPromptBox.Text;
 
-        // Persist first — if this fails, the live singleton stays untouched
+        // Validate hotkeys before persisting — if registration fails, nothing is saved
+        bool hotkeysChanged =
+            candidate.TypoFixHotkey != _settings.TypoFixHotkey ||
+            candidate.DictationHotkey != _settings.DictationHotkey;
+
+        if (hotkeysChanged)
+        {
+            var oldTypoFix = _settings.TypoFixHotkey;
+            var oldDictation = _settings.DictationHotkey;
+
+            _hotkeyManager.UnregisterAll();
+
+            var failures = new List<string>();
+            TryRegisterHotkey(GlobalHotkeyManager.TypoFixHotkeyId, candidate.TypoFixHotkey, "Typo Fix", failures);
+            TryRegisterHotkey(GlobalHotkeyManager.DictationHotkeyId, candidate.DictationHotkey, "Dictation", failures);
+
+            if (failures.Count > 0)
+            {
+                _logger.LogWarning("Hotkey registration failed: {Failures}", string.Join(", ", failures));
+
+                // Roll back: unregister whatever succeeded, re-register originals
+                _hotkeyManager.UnregisterAll();
+                var rollbackFailures = new List<string>();
+                TryRegisterHotkey(GlobalHotkeyManager.TypoFixHotkeyId, oldTypoFix, "Typo Fix", rollbackFailures);
+                TryRegisterHotkey(GlobalHotkeyManager.DictationHotkeyId, oldDictation, "Dictation", rollbackFailures);
+
+                // Revert UI
+                _typoFixHotkeyBox.Text = oldTypoFix;
+                _dictationHotkeyBox.Text = oldDictation;
+
+                var message = "Could not register the following hotkey(s) — they may be in use by another application:\n\n" +
+                    string.Join("\n", failures) +
+                    "\n\nNo settings were saved.";
+
+                if (rollbackFailures.Count > 0)
+                {
+                    _logger.LogError("Hotkey rollback also failed: {Failures}", string.Join(", ", rollbackFailures));
+                    message += "\n\nWarning: the previous hotkeys could not be restored either. " +
+                        "Please set new hotkeys and save again.";
+                }
+                else
+                {
+                    message += " The previous hotkeys have been restored.";
+                }
+
+                MessageBox.Show(this, message, "Hotkey Registration Failed",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
+
+        // Hotkeys OK (or unchanged) — persist to disk
         try
         {
             _settingsManager.Save(candidate);
@@ -331,7 +424,7 @@ internal sealed class SettingsForm : Form
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save settings");
-            MessageBox.Show(
+            MessageBox.Show(this,
                 $"Failed to save settings: {ex.Message}",
                 "Save Error",
                 MessageBoxButtons.OK,
@@ -339,7 +432,7 @@ internal sealed class SettingsForm : Form
             return;
         }
 
-        // Persistence succeeded — commit to the live singleton
+        // Commit to the live singleton
         _settings.CopyFrom(candidate);
 
         // Hot-reload log level
@@ -350,6 +443,91 @@ internal sealed class SettingsForm : Form
 
         DialogResult = DialogResult.OK;
         Close();
+    }
+
+    private void TryRegisterHotkey(int id, string hotkeyString, string label, List<string>? failures)
+    {
+        try
+        {
+            if (!_hotkeyManager.Register(id, hotkeyString))
+                failures?.Add($"{label} ({hotkeyString})");
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid hotkey for {Label}: {Hotkey}", label, hotkeyString);
+            failures?.Add($"{label} ({hotkeyString}) — invalid format");
+        }
+    }
+
+    private void EnterCaptureMode(TextBox targetBox, Button sourceButton)
+    {
+        _captureTargetBox = targetBox;
+
+        sourceButton.Text = "Press new hotkey...";
+        sourceButton.Enabled = false;
+
+        // Disable the other set button and save/cancel to prevent interaction during capture
+        _setTypoFixHotkeyButton.Enabled = false;
+        _setDictationHotkeyButton.Enabled = false;
+        _saveButton.Enabled = false;
+        _cancelButton.Enabled = false;
+    }
+
+    private void ExitCaptureMode()
+    {
+        _captureTargetBox = null;
+
+        _setTypoFixHotkeyButton.Text = "Set New Hotkey";
+        _setTypoFixHotkeyButton.Enabled = true;
+        _setDictationHotkeyButton.Text = "Set New Hotkey";
+        _setDictationHotkeyButton.Enabled = true;
+        _saveButton.Enabled = true;
+        _cancelButton.Enabled = true;
+    }
+
+    private void OnFormKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_captureTargetBox is null)
+            return;
+
+        // Escape cancels capture without changing the hotkey
+        if (e.KeyCode == Keys.Escape)
+        {
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            ExitCaptureMode();
+            return;
+        }
+
+        // Ignore standalone modifier key presses — wait for a real key
+        if (e.KeyCode is Keys.ControlKey or Keys.ShiftKey or Keys.Menu
+            or Keys.LControlKey or Keys.RControlKey
+            or Keys.LShiftKey or Keys.RShiftKey
+            or Keys.LMenu or Keys.RMenu
+            or Keys.LWin or Keys.RWin)
+        {
+            return;
+        }
+
+        // Require at least one modifier
+        if (e.Modifiers == Keys.None)
+            return;
+
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+
+        _captureTargetBox.Text = FormatHotkey(e.Modifiers, e.KeyCode);
+        ExitCaptureMode();
+    }
+
+    internal static string FormatHotkey(Keys modifiers, Keys keyCode)
+    {
+        var parts = new List<string>();
+        if ((modifiers & Keys.Control) != 0) parts.Add("Ctrl");
+        if ((modifiers & Keys.Alt) != 0) parts.Add("Alt");
+        if ((modifiers & Keys.Shift) != 0) parts.Add("Shift");
+        parts.Add(keyCode.ToString());
+        return string.Join("+", parts);
     }
 
     private async void OnTestConnectionClick(object? sender, EventArgs e)
@@ -365,7 +543,7 @@ internal sealed class SettingsForm : Form
                 _apiEndpointBox.Text, _apiKeyBox.Text, _modelNameBox.Text,
                 cts.Token);
 
-            MessageBox.Show(
+            MessageBox.Show(this,
                 "Connection successful!",
                 "Test Connection",
                 MessageBoxButtons.OK,
@@ -374,7 +552,7 @@ internal sealed class SettingsForm : Form
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Test connection failed");
-            MessageBox.Show(
+            MessageBox.Show(this,
                 $"Connection failed: {ex.Message}",
                 "Test Connection",
                 MessageBoxButtons.OK,

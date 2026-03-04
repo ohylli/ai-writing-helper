@@ -124,6 +124,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
             _settingsManager,
             _levelSwitch,
             _llmProvider,
+            _hotkeyManager,
             _loggerFactory.CreateLogger<SettingsForm>());
 
         _settingsForm.ShowDialog();

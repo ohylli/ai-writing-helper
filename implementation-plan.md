@@ -103,7 +103,7 @@ Wire up hotkey registration and the tray icon.
 ## Phase 7: Settings GUI (General + Typo Fixing tabs)
 
 - [x] `UI/SettingsForm.cs` — WinForms `Form` with `TabControl`, programmatic layout (no designer), 500×480, `FixedDialog`
-  - **General tab:** log level dropdown (`ComboBox` DropDownList), read-only hotkey display for typo fix and dictation
+  - **General tab:** log level dropdown (`ComboBox` DropDownList), configurable hotkeys for typo fix and dictation (read-only TextBox + "Set New Hotkey" capture button per hotkey)
   - **Typo Fixing tab:** API endpoint, API key (password masked), model name, "Test Connection" button, system prompt multi-line textbox with `AcceptsReturn` and vertical scrollbar
   - **Dictation tab:** placeholder label ("Dictation settings will be available in a future update.")
 - [x] Accessibility: every control has `AccessibleName`/`AccessibleDescription`, logical tab order, keyboard-navigable
@@ -112,7 +112,8 @@ Wire up hotkey registration and the tray icon.
 - [x] "Test Connection" snapshots current settings, temporarily applies form values, calls `FixTextAsync`, restores originals in `finally`
 - [x] Hot-reload: log level updated via `LoggingLevelSwitch.MinimumLevel`; API settings read from `AppSettings` on next call (no explicit reload needed)
 - [x] `TrayApplicationContext` updated: new DI deps (`SettingsManager`, `LoggingLevelSwitch`, `ILLMProvider`, `ILoggerFactory`), Settings menu item before separator before Quit, single-instance `SettingsForm` guard
-- **Deferred:** hotkey capture/re-registration UI, Start with Windows checkbox
+- [x] Hotkey capture/re-registration UI: "Set New Hotkey" buttons enter keyboard capture mode via `KeyPreview`, `FormatHotkey` produces strings compatible with `ParseHotkey`. On save, hotkeys are validated via Win32 registration before persisting — atomic rollback on failure with distinct error messages. `SettingsForm` receives `GlobalHotkeyManager` from `TrayApplicationContext`.
+- [ ] Start with Windows checkbox
 
 ---
 

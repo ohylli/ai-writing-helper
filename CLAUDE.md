@@ -74,7 +74,20 @@ Phase 5 added `OperationLock` (Core/) — a `SemaphoreSlim(1,1)` concurrency gua
 
 Phase 6 added `GlobalHotkeyManager` (Core/) — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke with a private `NativeWindow` subclass for `WM_HOTKEY` messages, `MOD_NOREPEAT` for accessibility, and a `ParseHotkey` string parser. `TrayApplicationContext` (UI/) wires hotkey events to `TypoFixService` (Ctrl+Alt+Space) and a dictation stub (Ctrl+Alt+D). `TypoFixService` is injected as `Lazy<TypoFixService>` to break a circular DI dependency.
 
-Phase 7 added `SettingsForm` (UI/) — a modal `Form` with programmatic layout and three tabs: General (log level combo, read-only hotkey display), Typo Fixing (API endpoint, password-masked API key, model name, Test Connection button, multiline system prompt), and Dictation (placeholder). Save writes to the `AppSettings` singleton and persists via `SettingsManager`; log level is hot-reloaded via `LoggingLevelSwitch`. Test Connection temporarily applies form values, calls `FixTextAsync`, restores originals in `finally`. All controls have `AccessibleName`/`AccessibleDescription` for NVDA. `TrayApplicationContext` now takes `SettingsManager`, `LoggingLevelSwitch`, `ILLMProvider`, and `ILoggerFactory` via DI; context menu is Settings → separator → Quit. Hotkey capture/re-registration UI and Start with Windows are deferred. Next up: Phase 8.
+Phase 7 added `SettingsForm` (UI/) — a modal `Form` with programmatic layout and
+three tabs: General (log level combo, hotkey configuration), Typo Fixing (API
+endpoint, password-masked API key, model name, Test Connection button, multiline
+system prompt), and Dictation (placeholder). Save writes to the `AppSettings`
+singleton and persists via `SettingsManager`; log level is hot-reloaded via
+`LoggingLevelSwitch`. Test Connection temporarily applies form values, calls
+`FixTextAsync`, restores originals in `finally`. All controls have
+`AccessibleName`/`AccessibleDescription` for NVDA. `TrayApplicationContext` now
+takes `SettingsManager`, `LoggingLevelSwitch`, `ILLMProvider`, and
+`ILoggerFactory` via DI; context menu is Settings → separator → Quit. Hotkey
+configuration uses a "Set New Hotkey" button per hotkey that enters keyboard
+capture mode (via `KeyPreview`); on Save, new hotkeys are validated via Win32
+`RegisterHotKey` before persisting — if registration fails, all hotkeys are
+rolled back and nothing is saved. Start with Windows is not yet implemented.
 
 ## Implementation Plan
 
