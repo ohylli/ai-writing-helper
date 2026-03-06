@@ -484,6 +484,8 @@ internal sealed class SettingsForm : Form
         sourceButton.AccessibleName = "Press the new hotkey";
         sourceButton.AccessibleDescription = "";
 
+        _saveButton.Enabled = false;
+
         targetBox.Text = "";
         targetBox.AccessibleName = $"Press a new {_captureOriginalAccessibleName} combination, or Escape to cancel";
         targetBox.Focus();
@@ -506,6 +508,9 @@ internal sealed class SettingsForm : Form
         _captureOriginalText = null;
         _captureOriginalAccessibleName = null;
         _captureSourceButtonOriginalAccessibleName = null;
+        _captureSourceButtonOriginalAccessibleDescription = null;
+
+        _saveButton.Enabled = true;
     }
 
     // ProcessDialogKey runs before CancelButton handling, so we can intercept
