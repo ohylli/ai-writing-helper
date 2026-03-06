@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using AIWritingHelper.Config;
 using AIWritingHelper.Core;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,13 @@ namespace AIWritingHelper.UI;
 
 internal sealed class SettingsForm : Form
 {
+    [DllImport("user32.dll")]
+    private static extern void NotifyWinEvent(uint winEvent, IntPtr hwnd, int objId, int childId);
+
+    private const uint EVENT_OBJECT_STATECHANGE = 0x800A;
+    private const int OBJID_CLIENT = -4;
+    private const int CHILDID_SELF = 0;
+
     private readonly AppSettings _settings;
     private readonly SettingsManager _settingsManager;
     private readonly LoggingLevelSwitch _levelSwitch;
@@ -185,6 +193,12 @@ internal sealed class SettingsForm : Form
             AutoSize = true,
             AccessibleName = "Start with Windows",
             AccessibleDescription = "When checked, AI Writing Helper launches automatically when you sign in to Windows"
+        };
+        _startWithWindowsCheckBox.CheckStateChanged += (sender, e) =>
+        {
+            var box = (CheckBox)sender!;
+            if (box.IsHandleCreated && box.Focused)
+                NotifyWinEvent(EVENT_OBJECT_STATECHANGE, box.Handle, OBJID_CLIENT, CHILDID_SELF);
         };
         generalLayout.Controls.Add(_startWithWindowsCheckBox, 1, 3);
 
