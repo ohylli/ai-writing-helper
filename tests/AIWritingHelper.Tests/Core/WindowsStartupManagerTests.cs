@@ -9,8 +9,8 @@ namespace AIWritingHelper.Tests.Core;
 [Trait("Category", "Integration")]
 public class WindowsStartupManagerTests : IDisposable
 {
-    private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "AIWritingHelper";
+    private static string RunKeyPath => WindowsStartupManager.RunKeyPath;
+    private static string ValueName => WindowsStartupManager.ValueName;
 
     public void Dispose()
     {

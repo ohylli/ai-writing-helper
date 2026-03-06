@@ -83,7 +83,8 @@ internal static class Program
             services.AddSingleton<GlobalHotkeyManager>();
             using var provider = services.BuildServiceProvider();
 
-            provider.GetRequiredService<IStartupManager>().SyncStartupState();
+            if (!provider.GetRequiredService<IStartupManager>().SyncStartupState())
+                Log.Warning("Startup registry sync failed on launch");
 
             Application.Run(provider.GetRequiredService<TrayApplicationContext>());
 

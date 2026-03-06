@@ -6,8 +6,8 @@ namespace AIWritingHelper.Core;
 
 internal sealed class WindowsStartupManager : IStartupManager
 {
-    private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "AIWritingHelper";
+    internal const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    internal const string ValueName = "AIWritingHelper";
 
     private readonly AppSettings _settings;
     private readonly ILogger<WindowsStartupManager> _logger;
