@@ -64,30 +64,19 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1-7 are complete. The typo fix feature is fully wired end-to-end with a settings GUI: Ctrl+Alt+Space triggers clipboard text → LLM API → corrected text back to clipboard → success sound, all from the system tray. Users can configure everything via tray → Settings.
+Phases 1–8 are complete — typo fixing is fully functional end-to-end with a settings GUI and polish. Next up: dictation (phases 9+).
 
-Phase 3 added core abstraction interfaces (`ILLMProvider`, `ISTTProvider`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier` in `Core/`) and their implementations: `SystemSoundPlayer` (Audio/), `ClipboardService` (Core/), and `TrayNotifier` (UI/). All three are registered in DI.
+**What's working:**
+- System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys
+- Typo fix flow: Ctrl+Alt+Space → clipboard text → LLM API → corrected text back to clipboard → success sound
+- Core abstractions: `ILLMProvider`, `ISTTProvider`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier`
+- `OpenAICompatibleLLMProvider` (Services/) with configurable endpoint/model/API key, 30s timeout
+- `OperationLock` (Core/) — semaphore guard ensuring single concurrent operation
+- `GlobalHotkeyManager` (Core/) — Win32 `RegisterHotKey` P/Invoke with `MOD_NOREPEAT`
+- `SettingsForm` (UI/) — hotkey capture, Test Connection, Start with Windows, all NVDA-accessible
+- Audio feedback via `SystemSoundPlayer`, balloon notifications via `TrayNotifier`
 
-Phase 4 added `OpenAICompatibleLLMProvider` (Services/) implementing `ILLMProvider`. It uses the OpenAI chat completions format with configurable endpoint/model/API key from `AppSettings`, 30s timeout via linked `CancellationTokenSource`, and nested private JSON model classes. Registered in DI along with `HttpClient`. `ISTTProvider` has no implementation yet — that comes in Phase 10.
-
-Phase 5 added `OperationLock` (Core/) — a `SemaphoreSlim(1,1)` concurrency guard shared by typo fix and later dictation — and `TypoFixService` (Core/) which orchestrates the full typo-fix workflow: acquire lock → read clipboard → call LLM → write result → play success sound. Handles all error cases (empty clipboard, busy lock, timeout, HTTP errors, cancellation) with appropriate sounds, notifications, and logging. Lock is always released in `finally`. Both registered as singletons in DI.
-
-Phase 6 added `GlobalHotkeyManager` (Core/) — Win32 `RegisterHotKey`/`UnregisterHotKey` via P/Invoke with a private `NativeWindow` subclass for `WM_HOTKEY` messages, `MOD_NOREPEAT` for accessibility, and a `ParseHotkey` string parser. `TrayApplicationContext` (UI/) wires hotkey events to `TypoFixService` (Ctrl+Alt+Space) and a dictation stub (Ctrl+Alt+D). `TypoFixService` is injected as `Lazy<TypoFixService>` to break a circular DI dependency.
-
-Phase 7 added `SettingsForm` (UI/) — a modal `Form` with programmatic layout and
-three tabs: General (log level combo, hotkey configuration, start with windows), Typo Fixing (API
-endpoint, password-masked API key, model name, Test Connection button, multiline
-system prompt), and Dictation (placeholder). Save writes to the `AppSettings`
-singleton and persists via `SettingsManager`; log level is hot-reloaded via
-`LoggingLevelSwitch`. Test Connection temporarily applies form values, calls
-`FixTextAsync`, restores originals in `finally`. All controls have
-`AccessibleName`/`AccessibleDescription` for NVDA. `TrayApplicationContext` now
-takes `SettingsManager`, `LoggingLevelSwitch`, `ILLMProvider`, and
-`ILoggerFactory` via DI; context menu is Settings → separator → Quit. Hotkey
-configuration uses a "Set New Hotkey" button per hotkey that enters keyboard
-capture mode (via `KeyPreview`); on Save, new hotkeys are validated via Win32
-`RegisterHotKey` before persisting — if registration fails, all hotkeys are
-rolled back and nothing is saved.
+**Not yet implemented:** `ISTTProvider` (ElevenLabs Scribe), microphone recording, dictation workflow.
 
 ## Implementation Plan
 

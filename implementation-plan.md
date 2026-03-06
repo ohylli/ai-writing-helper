@@ -121,13 +121,13 @@ Wire up hotkey registration and the tray icon.
 
 Manual end-to-end validation of the complete typo fixing flow.
 
-- [ ] Copy text with typos → press hotkey → verify corrected text on clipboard → hear success sound
-- [ ] Test with empty clipboard, non-text clipboard, API down, invalid API key
-- [ ] Test hotkey conflict detection
-- [ ] Test settings save/load round-trip through GUI
-- [ ] Test single-instance enforcement
-- [ ] NVDA screen reader: verify all settings controls are announced, tab order works, balloon tips announced
-- [ ] Run `dotnet test` — all unit tests pass
+- [x] Copy text with typos → press hotkey → verify corrected text on clipboard → hear success sound
+- [x] Test with empty clipboard, non-text clipboard, API down, invalid API key
+- [x] Test hotkey conflict detection
+- [x] Test settings save/load round-trip through GUI
+- [x] Test single-instance enforcement
+- [x] NVDA screen reader: verify all settings controls are announced, tab order works, balloon tips announced
+- [x] Run `dotnet test` — all unit tests pass
 
 ---
 
