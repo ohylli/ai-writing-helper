@@ -13,6 +13,7 @@ internal sealed class SettingsForm : Form
     private readonly LoggingLevelSwitch _levelSwitch;
     private readonly ILLMProvider _llmProvider;
     private readonly GlobalHotkeyManager _hotkeyManager;
+    private readonly IStartupManager _startupManager;
     private readonly ILogger<SettingsForm> _logger;
 
     // General tab controls
@@ -21,6 +22,7 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _dictationHotkeyBox;
     private readonly Button _setTypoFixHotkeyButton;
     private readonly Button _setDictationHotkeyButton;
+    private readonly CheckBox _startWithWindowsCheckBox;
 
     // Hotkey capture state
     private TextBox? _captureTargetBox;
@@ -47,6 +49,7 @@ internal sealed class SettingsForm : Form
         LoggingLevelSwitch levelSwitch,
         ILLMProvider llmProvider,
         GlobalHotkeyManager hotkeyManager,
+        IStartupManager startupManager,
         ILogger<SettingsForm> logger)
     {
         _settings = settings;
@@ -54,6 +57,7 @@ internal sealed class SettingsForm : Form
         _levelSwitch = levelSwitch;
         _llmProvider = llmProvider;
         _hotkeyManager = hotkeyManager;
+        _startupManager = startupManager;
         _logger = logger;
 
         Text = "AI Writing Helper Settings";
@@ -173,6 +177,16 @@ internal sealed class SettingsForm : Form
         dictationHotkeyPanel.Controls.Add(_setDictationHotkeyButton);
         generalLayout.Controls.Add(dictationHotkeyLabel, 0, 2);
         generalLayout.Controls.Add(dictationHotkeyPanel, 1, 2);
+
+        // Start with Windows
+        _startWithWindowsCheckBox = new CheckBox
+        {
+            Text = "Start with Windows",
+            AutoSize = true,
+            AccessibleName = "Start with Windows",
+            AccessibleDescription = "When checked, AI Writing Helper launches automatically when you sign in to Windows"
+        };
+        generalLayout.Controls.Add(_startWithWindowsCheckBox, 1, 3);
 
         generalTab.Controls.Add(generalLayout);
 
@@ -348,6 +362,7 @@ internal sealed class SettingsForm : Form
         _logLevelCombo.SelectedIndex = levelIndex >= 0 ? levelIndex : 1; // default to Information
         _typoFixHotkeyBox.Text = _settings.TypoFixHotkey;
         _dictationHotkeyBox.Text = _settings.DictationHotkey;
+        _startWithWindowsCheckBox.Checked = _settings.StartWithWindows;
 
         // Typo Fixing
         _apiEndpointBox.Text = _settings.LlmApiEndpoint;
@@ -368,6 +383,7 @@ internal sealed class SettingsForm : Form
         candidate.LlmApiKey = _apiKeyBox.Text;
         candidate.LlmModelName = _modelNameBox.Text;
         candidate.LlmSystemPrompt = _systemPromptBox.Text;
+        candidate.StartWithWindows = _startWithWindowsCheckBox.Checked;
 
         // Validate hotkeys before persisting — if registration fails, nothing is saved
         bool hotkeysChanged =
@@ -439,6 +455,13 @@ internal sealed class SettingsForm : Form
 
         // Commit to the live singleton
         _settings.CopyFrom(candidate);
+
+        // Sync Windows startup registry entry
+        if (!_startupManager.SyncStartupState())
+        {
+            MessageBox.Show(this, "Settings were saved, but the Windows startup entry could not be updated.",
+                "Startup Registration Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
 
         // Hot-reload log level
         if (Enum.TryParse<LogEventLevel>(_settings.LogLevel, ignoreCase: true, out var parsedLevel))

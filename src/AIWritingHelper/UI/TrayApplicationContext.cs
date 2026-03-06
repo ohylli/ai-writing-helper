@@ -19,6 +19,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
     private readonly LoggingLevelSwitch _levelSwitch;
     private readonly ILLMProvider _llmProvider;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IStartupManager _startupManager;
     private SettingsForm? _settingsForm;
 
     public TrayApplicationContext(
@@ -30,7 +31,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         SettingsManager settingsManager,
         LoggingLevelSwitch levelSwitch,
         ILLMProvider llmProvider,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        IStartupManager startupManager)
     {
         _logger = logger;
         _hotkeyManager = hotkeyManager;
@@ -41,6 +43,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         _levelSwitch = levelSwitch;
         _llmProvider = llmProvider;
         _loggerFactory = loggerFactory;
+        _startupManager = startupManager;
 
         var settingsItem = new ToolStripMenuItem("Settings");
         settingsItem.Click += OnSettingsClick;
@@ -125,6 +128,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
             _levelSwitch,
             _llmProvider,
             _hotkeyManager,
+            _startupManager,
             _loggerFactory.CreateLogger<SettingsForm>());
 
         _settingsForm.ShowDialog();
