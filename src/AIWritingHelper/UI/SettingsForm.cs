@@ -27,6 +27,8 @@ internal sealed class SettingsForm : Form
     private Button? _captureSourceButton;
     private string? _captureOriginalText;
     private string? _captureOriginalAccessibleName;
+    private string? _captureSourceButtonOriginalAccessibleName;
+    private string? _captureSourceButtonOriginalAccessibleDescription;
 
     // Typo Fixing tab controls
     private readonly TextBox _apiEndpointBox;
@@ -473,10 +475,14 @@ internal sealed class SettingsForm : Form
 
         _captureTargetBox = targetBox;
         _captureSourceButton = sourceButton;
+        _captureSourceButtonOriginalAccessibleName = sourceButton.AccessibleName;
+        _captureSourceButtonOriginalAccessibleDescription = sourceButton.AccessibleDescription;
         _captureOriginalText = targetBox.Text;
         _captureOriginalAccessibleName = targetBox.AccessibleName;
 
-        sourceButton.Text = "Capturing...";
+        sourceButton.Text = "Press the new hotkey";
+        sourceButton.AccessibleName = "Press the new hotkey";
+        sourceButton.AccessibleDescription = "";
 
         targetBox.Text = "";
         targetBox.AccessibleName = $"Press a new {_captureOriginalAccessibleName} combination, or Escape to cancel";
@@ -489,12 +495,17 @@ internal sealed class SettingsForm : Form
             _captureTargetBox.AccessibleName = _captureOriginalAccessibleName;
 
         if (_captureSourceButton is not null)
+        {
             _captureSourceButton.Text = "Set New Hotkey";
-
+            _captureSourceButton.AccessibleName = _captureSourceButtonOriginalAccessibleName;
+            _captureSourceButton.AccessibleDescription = _captureSourceButtonOriginalAccessibleDescription;
+        }
+            
         _captureTargetBox = null;
         _captureSourceButton = null;
         _captureOriginalText = null;
         _captureOriginalAccessibleName = null;
+        _captureSourceButtonOriginalAccessibleName = null;
     }
 
     // ProcessDialogKey runs before CancelButton handling, so we can intercept
