@@ -133,11 +133,11 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ## Phase 9: Audio Recording
 
-- [ ] `Audio/MicrophoneRecorder.cs` — NAudio `WaveInEvent` wrapper
+- [x] `Audio/MicrophoneRecorder.cs` — NAudio `WaveInEvent` wrapper
   - Start/stop recording to a `MemoryStream` (WAV format)
   - Configurable device selection (enumerate devices, select by settings)
   - 1-hour max duration auto-stop
-- [ ] `Core/IAudioRecorder.cs` — interface: `Start()`, `Stop() → Stream`, `EnumerateDevices() → List<AudioDevice>`
+- [x] `Core/IAudioRecorder.cs` — interface: `Start()`, `Stop() → Stream`, `EnumerateDevices() → List<AudioDevice>`
 
 ---
 

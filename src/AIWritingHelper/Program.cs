@@ -71,6 +71,7 @@ internal static class Program
             services.AddSingleton<TrayApplicationContext>();
             services.AddSingleton<ITrayNotifier>(sp => sp.GetRequiredService<TrayApplicationContext>());
             services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
+            services.AddSingleton<IAudioRecorder, MicrophoneRecorder>();
             services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddHttpClient();
             services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
