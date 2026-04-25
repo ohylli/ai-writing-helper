@@ -4,7 +4,7 @@ public class AppSettings
 {
     public string LlmApiEndpoint { get; set; } = "https://api.cerebras.ai/v1";
     public string LlmApiKey { get; set; } = "";
-    public string LlmModelName { get; set; } = "gpt-oss-120b";
+    public string LlmModelName { get; set; } = "llama3.1-8b";
 
     public string LlmSystemPrompt { get; set; } =
         "Fix typos and obvious grammar mistakes in the following text. " +
