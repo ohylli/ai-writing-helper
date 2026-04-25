@@ -153,36 +153,50 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ---
 
-## Phase 11: Dictation Orchestration
+## Phase 11: Dictation Orchestration (clipboard mode)
+
+Get the basic dictation flow working end-to-end with clipboard output only. Direct insertion is deferred to phase 13 so we can validate the simpler path first.
 
 - [ ] `Core/DictationService.cs`
   - Toggle pattern: first hotkey press starts recording, second stops
   - On stop: send audio to STT provider, get text
-  - Output mode from settings: clipboard or direct insertion
+  - Write transcribed text to clipboard
   - Play appropriate sounds (start, stop, success, error)
   - Uses `OperationLock` from Phase 5
-- [ ] `Core/DirectInsertionService.cs` — save clipboard → set text → `SendInput` Ctrl+V → restore clipboard
-  - Uses Win32 `SendInput` P/Invoke (not `SendKeys`)
-  - **Note:** A delay is needed between the `SendInput` paste and clipboard restore, otherwise the restore happens before the target app processes the paste. This is inherently fragile — clipboard mode remains the reliable default.
 - [ ] Unit tests
 
 ---
 
-## Phase 12: Settings GUI — Dictation Tab
+## Phase 12: Settings GUI — Dictation Tab & End-to-End Validation
 
-- [ ] Fill in the Dictation tab: API key, model name, "Test Connection", microphone dropdown, output mode radio buttons
+Fill in the Dictation tab with everything needed for the clipboard-mode flow, then validate end-to-end. Output mode UI is intentionally omitted — it lands in phase 13 alongside direct insertion.
+
+- [ ] Fill in the Dictation tab: API key, model name, "Test Connection", microphone dropdown
 - [ ] Microphone dropdown populated from `IAudioRecorder.EnumerateDevices()`
 - [ ] Accessibility: same standards as Phase 7
 - [ ] Register dictation hotkey alongside typo fix hotkey
+- [ ] End-to-end dictation: press hotkey → speak → press hotkey → text on clipboard
+- [ ] Test concurrent operation rejection (trigger typo fix during dictation)
+- [ ] NVDA testing for dictation tab controls
 
 ---
 
-## Phase 13: Final Integration & Testing
+## Phase 13: Direct Insertion Output Mode
 
-- [ ] End-to-end dictation: press hotkey → speak → press hotkey → text appears
-- [ ] Test both output modes (clipboard, direct insertion)
-- [ ] Test concurrent operation rejection (trigger typo fix during dictation)
-- [ ] NVDA testing for dictation tab controls
+Now that the clipboard-mode dictation flow is proven, add direct insertion as an alternative output mode.
+
+- [ ] `Core/DirectInsertionService.cs` — save clipboard → set text → `SendInput` Ctrl+V → restore clipboard
+  - Uses Win32 `SendInput` P/Invoke (not `SendKeys`)
+  - **Note:** A delay is needed between the `SendInput` paste and clipboard restore, otherwise the restore happens before the target app processes the paste. This is inherently fragile — clipboard mode remains the reliable default.
+- [ ] Add output mode radio buttons (clipboard / direct insertion) to the Dictation settings tab; persist to `AppSettings`
+- [ ] Wire `DictationService` to dispatch to clipboard or direct insertion based on the configured output mode
+- [ ] Unit tests for `DirectInsertionService` and the mode dispatch in `DictationService`
+- [ ] End-to-end test of direct insertion mode
+
+---
+
+## Phase 14: Final Integration & Testing
+
 - [ ] All unit tests pass
 - [ ] `dotnet publish` single-file exe works
 - [ ] Update README with usage instructions
