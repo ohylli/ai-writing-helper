@@ -157,13 +157,16 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 Get the basic dictation flow working end-to-end with clipboard output only. Direct insertion is deferred to phase 13 so we can validate the simpler path first.
 
-- [ ] `Core/DictationService.cs`
+- [x] `Core/DictationService.cs`
   - Toggle pattern: first hotkey press starts recording, second stops
   - On stop: send audio to STT provider, get text
   - Write transcribed text to clipboard
   - Play appropriate sounds (start, stop, success, error)
   - Uses `OperationLock` from Phase 5
-- [ ] Unit tests
+  - Empty STT result (silence) surfaces "No speech detected" without clobbering the clipboard
+  - `RecordingFaulted` event handler releases the lock and notifies the user on mid-recording hardware failure
+- [x] Unit tests
+- [x] Wired into DI (`Program.cs`) via `Lazy<DictationService>` and dispatched from `TrayApplicationContext.OnHotkeyPressed`
 
 ---
 

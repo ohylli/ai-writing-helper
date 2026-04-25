@@ -11,8 +11,9 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
     private readonly ContextMenuStrip _contextMenu;
     private readonly ILogger<TrayApplicationContext> _logger;
     private readonly GlobalHotkeyManager _hotkeyManager;
-    // Lazy to break circular DI: this class → TypoFixService → ITrayNotifier → this class.
+    // Lazy to break circular DI: this class → service → ITrayNotifier → this class.
     private readonly Lazy<TypoFixService> _typoFixService;
+    private readonly Lazy<DictationService> _dictationService;
     private readonly CancellationTokenSource _appCts;
     private readonly AppSettings _settings;
     private readonly SettingsManager _settingsManager;
@@ -26,6 +27,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         ILogger<TrayApplicationContext> logger,
         GlobalHotkeyManager hotkeyManager,
         Lazy<TypoFixService> typoFixService,
+        Lazy<DictationService> dictationService,
         AppSettings appSettings,
         CancellationTokenSource appCts,
         SettingsManager settingsManager,
@@ -37,6 +39,7 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         _logger = logger;
         _hotkeyManager = hotkeyManager;
         _typoFixService = typoFixService;
+        _dictationService = dictationService;
         _appCts = appCts;
         _settings = appSettings;
         _settingsManager = settingsManager;
@@ -109,7 +112,11 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
                 break;
 
             case GlobalHotkeyManager.DictationHotkeyId:
-                _logger.LogDebug("Dictation hotkey pressed (not yet implemented)");
+                _logger.LogDebug("Dictation hotkey pressed");
+                var dictationTask = _dictationService.Value.ToggleAsync(_appCts.Token);
+                _ = dictationTask.ContinueWith(
+                    t => _logger.LogError(t.Exception, "Unhandled exception in dictation"),
+                    TaskContinuationOptions.OnlyOnFaulted);
                 break;
         }
     }

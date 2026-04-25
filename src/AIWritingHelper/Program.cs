@@ -78,10 +78,12 @@ internal static class Program
             services.AddSingleton<ISTTProvider, ElevenLabsSTTProvider>();
             services.AddSingleton<OperationLock>();
             services.AddSingleton<TypoFixService>();
+            services.AddSingleton<DictationService>();
             services.AddSingleton<IStartupManager, WindowsStartupManager>();
-            // Lazy<T> breaks a circular DI dependency: TrayApplicationContext → TypoFixService
+            // Lazy<T> breaks a circular DI dependency: TrayApplicationContext → service
             // → ITrayNotifier → TrayApplicationContext. Resolved lazily on first hotkey press.
             services.AddSingleton(sp => new Lazy<TypoFixService>(sp.GetRequiredService<TypoFixService>));
+            services.AddSingleton(sp => new Lazy<DictationService>(sp.GetRequiredService<DictationService>));
             services.AddSingleton<GlobalHotkeyManager>();
             using var provider = services.BuildServiceProvider();
 

@@ -64,11 +64,12 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1–10 are complete — typo fixing is fully functional, microphone recording works, and the ElevenLabs Scribe v2 speech-to-text provider is in place. Next up: dictation orchestration (phase 11) and the Dictation settings tab (phase 12).
+Phases 1–11 are complete — typo fixing and clipboard-mode dictation are both functional end-to-end. Next up: the Dictation settings tab (phase 12) and the direct-insertion output mode (phase 13).
 
 **What's working:**
 - System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys
 - Typo fix flow: Ctrl+Alt+Space → clipboard text → LLM API → corrected text back to clipboard → success sound
+- Dictation flow (clipboard mode): Ctrl+Alt+D → record → Ctrl+Alt+D → STT → transcript on clipboard → success sound. Empty transcript surfaces "No speech detected" without clobbering the clipboard.
 - Core abstractions: `ILLMProvider`, `ISTTProvider`, `IAudioRecorder`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier`
 - `OpenAICompatibleLLMProvider` (Services/) with configurable endpoint/model/API key, 30s timeout
 - `OperationLock` (Core/) — semaphore guard ensuring single concurrent operation
@@ -77,8 +78,9 @@ Phases 1–10 are complete — typo fixing is fully functional, microphone recor
 - Audio feedback via `SystemSoundPlayer`, balloon notifications via `TrayNotifier`
 - `MicrophoneRecorder` (Audio/) — NAudio `WaveInEvent` wrapper with device selection, 16kHz/16-bit/mono WAV, 1-hour auto-stop
 - `ElevenLabsSTTProvider` (Services/) — multipart upload to Scribe v2 (`scribe_v2`), `xi-api-key` header, 30s timeout, returns transcribed text
+- `DictationService` (Core/) — toggle pattern, holds `OperationLock` across record→transcribe→clipboard, releases lock cleanly on `RecordingFaulted`
 
-**Not yet implemented:** dictation orchestration, dictation settings GUI.
+**Not yet implemented:** Dictation tab GUI (STT API key/model/mic dropdown — currently must be edited directly in `settings.yaml`), direct-insertion output mode.
 
 ## Implementation Plan
 
