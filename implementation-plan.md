@@ -143,13 +143,13 @@ Manual end-to-end validation of the complete typo fixing flow.
 
 ## Phase 10: Speech-to-Text Service
 
-- [ ] `Services/ElevenLabsSTTProvider.cs` — implements `ISTTProvider`
+- [x] `Services/ElevenLabsSTTProvider.cs` — implements `ISTTProvider`
   - POST audio to ElevenLabs Scribe v2 endpoint (multipart form upload)
   - Verify that the WAV format from NAudio is accepted by the API (ElevenLabs does accept WAV)
   - Parse transcription response
   - 30-second timeout
   - Error handling
-- [ ] Unit tests with mocked HTTP
+- [x] Unit tests with mocked HTTP
 
 ---
 

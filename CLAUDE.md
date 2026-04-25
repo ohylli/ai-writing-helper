@@ -64,7 +64,7 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1–9 are complete — typo fixing is fully functional, and microphone recording infrastructure is in place. Next up: STT service and dictation workflow (phases 10+).
+Phases 1–10 are complete — typo fixing is fully functional, microphone recording works, and the ElevenLabs Scribe v2 speech-to-text provider is in place. Next up: dictation orchestration (phase 11) and the Dictation settings tab (phase 12).
 
 **What's working:**
 - System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys
@@ -76,8 +76,9 @@ Phases 1–9 are complete — typo fixing is fully functional, and microphone re
 - `SettingsForm` (UI/) — hotkey capture, Test Connection, Start with Windows, all NVDA-accessible
 - Audio feedback via `SystemSoundPlayer`, balloon notifications via `TrayNotifier`
 - `MicrophoneRecorder` (Audio/) — NAudio `WaveInEvent` wrapper with device selection, 16kHz/16-bit/mono WAV, 1-hour auto-stop
+- `ElevenLabsSTTProvider` (Services/) — multipart upload to Scribe v2 (`scribe_v2`), `xi-api-key` header, 30s timeout, returns transcribed text
 
-**Not yet implemented:** `ISTTProvider` (ElevenLabs Scribe), dictation orchestration, dictation settings GUI.
+**Not yet implemented:** dictation orchestration, dictation settings GUI.
 
 ## Implementation Plan
 

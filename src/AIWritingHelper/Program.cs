@@ -75,6 +75,7 @@ internal static class Program
             services.AddSingleton<IClipboardService, ClipboardService>();
             services.AddHttpClient();
             services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
+            services.AddSingleton<ISTTProvider, ElevenLabsSTTProvider>();
             services.AddSingleton<OperationLock>();
             services.AddSingleton<TypoFixService>();
             services.AddSingleton<IStartupManager, WindowsStartupManager>();
