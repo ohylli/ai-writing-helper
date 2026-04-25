@@ -62,17 +62,10 @@ public class ElevenLabsSTTProviderIntegrationTests
         var provider = CreateProvider(apiKey);
         using var audio = GenerateSilentWav(TimeSpan.FromMilliseconds(500));
 
-        // We are validating the HTTP contract: the API accepts our WAV payload + auth header.
-        // Silent audio typically yields an empty transcription, which the provider surfaces as
-        // InvalidOperationException("... empty text"). That's still proof the HTTP layer works.
-        try
-        {
-            var result = await provider.TranscribeAsync(audio, CancellationToken.None);
-            Assert.NotNull(result);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("empty text"))
-        {
-        }
+        // Validates the HTTP contract: the API accepts our WAV payload + auth header.
+        // Silent audio yields an empty transcription, which is still proof the HTTP layer works.
+        var result = await provider.TranscribeAsync(audio, CancellationToken.None);
+        Assert.NotNull(result);
     }
 
     [SkippableFact]

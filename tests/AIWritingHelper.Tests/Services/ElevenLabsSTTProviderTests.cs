@@ -133,27 +133,40 @@ public class ElevenLabsSTTProviderTests
     }
 
     [Fact]
-    public async Task TranscribeAsync_EmptyText_ThrowsInvalidOperationException()
+    public async Task TranscribeAsync_EmptyText_ReturnsEmptyString()
     {
+        // Silence yields text="" per the spec. Caller (orchestration) decides what to do.
         var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, """{"text":""}""");
         var provider = CreateProvider(DefaultSettings(), handler);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => provider.TranscribeAsync(MakeWav(), CancellationToken.None));
+        var result = await provider.TranscribeAsync(MakeWav(), CancellationToken.None);
 
-        Assert.Contains("empty text", ex.Message);
+        Assert.Equal("", result);
     }
 
     [Fact]
     public async Task TranscribeAsync_NullText_ThrowsInvalidOperationException()
     {
+        // text is required by the spec; null indicates a malformed/unexpected response shape.
         var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, """{"text":null}""");
         var provider = CreateProvider(DefaultSettings(), handler);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => provider.TranscribeAsync(MakeWav(), CancellationToken.None));
 
-        Assert.Contains("empty text", ex.Message);
+        Assert.Contains("text", ex.Message);
+    }
+
+    [Fact]
+    public async Task TranscribeAsync_DoesNotDisposeCallerStream()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+        var audio = new TrackingStream([0x52, 0x49, 0x46, 0x46]);
+
+        await provider.TranscribeAsync(audio, CancellationToken.None);
+
+        Assert.False(audio.IsDisposed, "Provider must not dispose the caller's audio stream");
     }
 
     [Fact]
@@ -197,6 +210,17 @@ public class ElevenLabsSTTProviderTests
     private sealed class FakeHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new(handler);
+    }
+
+    private sealed class TrackingStream(byte[] buffer) : MemoryStream(buffer, writable: false)
+    {
+        public bool IsDisposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
     }
 
     private sealed class FakeHttpMessageHandler : HttpMessageHandler

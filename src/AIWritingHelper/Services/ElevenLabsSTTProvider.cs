@@ -52,7 +52,8 @@ internal sealed class ElevenLabsSTTProvider : ISTTProvider
         using var multipart = new MultipartFormDataContent();
         multipart.Add(new StringContent(modelName), "model_id");
 
-        var fileContent = new StreamContent(audio);
+        // Wrap so MultipartFormDataContent.Dispose doesn't propagate to the caller's stream.
+        var fileContent = new StreamContent(new NonDisposingStream(audio));
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         multipart.Add(fileContent, "file", "audio.wav");
 
@@ -101,9 +102,9 @@ internal sealed class ElevenLabsSTTProvider : ISTTProvider
             }
 
             var text = parsed?.Text;
-            if (string.IsNullOrEmpty(text))
+            if (text is null)
             {
-                throw new InvalidOperationException("STT response contained empty text");
+                throw new InvalidOperationException("STT response missing required 'text' field");
             }
 
             _logger.LogDebug("STT returned {Length} characters", text.Length);
@@ -115,5 +116,27 @@ internal sealed class ElevenLabsSTTProvider : ISTTProvider
     {
         [JsonPropertyName("text")]
         public string? Text { get; set; }
+    }
+
+    private sealed class NonDisposingStream : Stream
+    {
+        private readonly Stream _inner;
+
+        public NonDisposingStream(Stream inner) => _inner = inner;
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => _inner.CanWrite;
+        public override long Length => _inner.Length;
+        public override long Position { get => _inner.Position; set => _inner.Position = value; }
+        public override void Flush() => _inner.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => _inner.ReadAsync(buffer, offset, count, ct);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) => _inner.ReadAsync(buffer, ct);
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => _inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+        protected override void Dispose(bool disposing) { }
     }
 }
