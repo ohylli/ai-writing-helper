@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AIWritingHelper.Core;
 
-public sealed class DirectInsertionService
+internal sealed class DirectInsertionService : IDirectInsertionService
 {
     private const int PasteRestoreDelayMs = 150;
 
@@ -33,9 +33,11 @@ public sealed class DirectInsertionService
             _clipboard.SetText(text);
             _input.SendPaste();
             // Give the focused app time to process the synthetic Ctrl+V before we
-            // overwrite the clipboard with the restored value. Inherently fragile —
-            // see design.md "Direct Text Insertion" notes.
-            await Task.Delay(PasteRestoreDelayMs, ct);
+            // overwrite the clipboard with the restored value. Not cancellable —
+            // the paste already happened, so cancelling here would leave the
+            // transcribed text on the clipboard and skip the restore. Inherently
+            // fragile — see design.md "Direct Text Insertion" notes.
+            await Task.Delay(PasteRestoreDelayMs, CancellationToken.None);
         }
         finally
         {

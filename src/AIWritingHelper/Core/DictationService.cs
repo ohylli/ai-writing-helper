@@ -8,7 +8,7 @@ public class DictationService
     private readonly IAudioRecorder _recorder;
     private readonly ISTTProvider _stt;
     private readonly IClipboardService _clipboard;
-    private readonly DirectInsertionService _directInsertion;
+    private readonly IDirectInsertionService _directInsertion;
     private readonly ISoundPlayer _sound;
     private readonly ITrayNotifier _notifier;
     private readonly AppSettings _settings;
@@ -24,7 +24,7 @@ public class DictationService
         IAudioRecorder recorder,
         ISTTProvider stt,
         IClipboardService clipboard,
-        DirectInsertionService directInsertion,
+        IDirectInsertionService directInsertion,
         ISoundPlayer sound,
         ITrayNotifier notifier,
         AppSettings settings,
@@ -111,7 +111,7 @@ public class DictationService
                 return;
             }
 
-            if (string.Equals(_settings.DictationOutputMode, "DirectInsertion", StringComparison.OrdinalIgnoreCase))
+            if (_settings.DictationOutputMode == DictationOutputMode.DirectInsertion)
             {
                 await _directInsertion.InsertAsync(text, ct);
             }

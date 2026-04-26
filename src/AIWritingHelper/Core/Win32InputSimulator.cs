@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 
 namespace AIWritingHelper.Core;
 
@@ -9,13 +8,6 @@ internal sealed class Win32InputSimulator : IInputSimulator
     private const uint KEYEVENTF_KEYUP = 0x0002;
     private const ushort VK_CONTROL = 0x11;
     private const ushort VK_V = 0x56;
-
-    private readonly ILogger<Win32InputSimulator> _logger;
-
-    public Win32InputSimulator(ILogger<Win32InputSimulator> logger)
-    {
-        _logger = logger;
-    }
 
     public void SendPaste()
     {
@@ -30,9 +22,11 @@ internal sealed class Win32InputSimulator : IInputSimulator
         uint sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
         if (sent != inputs.Length)
         {
+            // Most common cause: the focused window belongs to an elevated process
+            // and we are running unelevated, so UIPI rejects the batch.
             int err = Marshal.GetLastWin32Error();
-            _logger.LogWarning("SendInput delivered {Sent}/{Total} events (Win32 error {Err})",
-                sent, inputs.Length, err);
+            throw new InvalidOperationException(
+                $"Could not paste — the focused window may require elevated privileges (Win32 error {err}, delivered {sent}/{inputs.Length} events)");
         }
     }
 

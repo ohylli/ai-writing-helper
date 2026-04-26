@@ -19,7 +19,7 @@ public class AppSettings
     public bool StartWithWindows { get; set; } = false;
     public string LogLevel { get; set; } = "Information";
     public string MicrophoneDeviceName { get; set; } = "";
-    public string DictationOutputMode { get; set; } = "Clipboard";
+    public DictationOutputMode DictationOutputMode { get; set; } = DictationOutputMode.Clipboard;
 
     public void CopyFrom(AppSettings source)
     {

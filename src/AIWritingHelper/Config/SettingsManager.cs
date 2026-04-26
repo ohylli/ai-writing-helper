@@ -73,7 +73,6 @@ public class SettingsManager
         settings.DictationHotkey ??= defaults.DictationHotkey;
         settings.LogLevel ??= defaults.LogLevel;
         settings.MicrophoneDeviceName ??= defaults.MicrophoneDeviceName;
-        settings.DictationOutputMode ??= defaults.DictationOutputMode;
     }
 
     public void Save(AppSettings settings)

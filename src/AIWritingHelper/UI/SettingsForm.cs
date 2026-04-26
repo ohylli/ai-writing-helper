@@ -524,7 +524,7 @@ internal sealed class SettingsForm : Form
         _sttApiKeyBox.Text = _settings.SttApiKey;
         _sttModelNameBox.Text = _settings.SttModelName;
         SelectMicrophoneByName(_settings.MicrophoneDeviceName);
-        bool isDirect = string.Equals(_settings.DictationOutputMode, "DirectInsertion", StringComparison.OrdinalIgnoreCase);
+        bool isDirect = _settings.DictationOutputMode == DictationOutputMode.DirectInsertion;
         _outputModeDirectInsertionRadio.Checked = isDirect;
         _outputModeClipboardRadio.Checked = !isDirect;
     }
@@ -563,7 +563,9 @@ internal sealed class SettingsForm : Form
         candidate.SttModelName = _sttModelNameBox.Text;
         var selectedMic = _microphoneCombo.SelectedItem?.ToString() ?? "";
         candidate.MicrophoneDeviceName = selectedMic == DefaultMicrophoneLabel ? "" : selectedMic;
-        candidate.DictationOutputMode = _outputModeDirectInsertionRadio.Checked ? "DirectInsertion" : "Clipboard";
+        candidate.DictationOutputMode = _outputModeDirectInsertionRadio.Checked
+            ? DictationOutputMode.DirectInsertion
+            : DictationOutputMode.Clipboard;
         candidate.StartWithWindows = _startWithWindowsCheckBox.Checked;
 
         // Validate hotkeys before persisting — if registration fails, nothing is saved

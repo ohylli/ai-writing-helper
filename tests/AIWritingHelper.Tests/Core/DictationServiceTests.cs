@@ -223,7 +223,7 @@ public class DictationServiceTests
     [Fact]
     public async Task OutputMode_Clipboard_WritesClipboardAndDoesNotPaste()
     {
-        _settings.DictationOutputMode = "Clipboard";
+        _settings.DictationOutputMode = DictationOutputMode.Clipboard;
         _stt.Result = "hello world";
         var svc = CreateService();
 
@@ -238,7 +238,7 @@ public class DictationServiceTests
     [Fact]
     public async Task OutputMode_DirectInsertion_PastesAndRestoresClipboard()
     {
-        _settings.DictationOutputMode = "DirectInsertion";
+        _settings.DictationOutputMode = DictationOutputMode.DirectInsertion;
         _clipboard.Text = "ORIGINAL";
         _stt.Result = "hello world";
         var svc = CreateService();
@@ -250,21 +250,6 @@ public class DictationServiceTests
         // After the paste-and-restore cycle, the clipboard holds the original again.
         Assert.Equal("ORIGINAL", _clipboard.Text);
         Assert.True(_sound.SuccessPlayed);
-    }
-
-    [Fact]
-    public async Task OutputMode_DirectInsertionCaseInsensitive_PastesAndRestoresClipboard()
-    {
-        _settings.DictationOutputMode = "directinsertion";
-        _clipboard.Text = "ORIGINAL";
-        _stt.Result = "hello world";
-        var svc = CreateService();
-
-        await svc.ToggleAsync(CancellationToken.None);
-        await svc.ToggleAsync(CancellationToken.None);
-
-        Assert.Equal(1, _input.PasteCount);
-        Assert.Equal("ORIGINAL", _clipboard.Text);
     }
 
     // --- Fakes ---

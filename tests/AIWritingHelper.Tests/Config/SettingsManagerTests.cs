@@ -59,7 +59,7 @@ public class SettingsManagerTests : IDisposable
             StartWithWindows = true,
             LogLevel = "Debug",
             MicrophoneDeviceName = "My Microphone",
-            DictationOutputMode = "DirectInsertion",
+            DictationOutputMode = DictationOutputMode.DirectInsertion,
         };
 
         _manager.Save(original);

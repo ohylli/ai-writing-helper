@@ -21,7 +21,7 @@ public class AppSettingsTests
             StartWithWindows = true,
             LogLevel = "Debug",
             MicrophoneDeviceName = "My Mic",
-            DictationOutputMode = "DirectInsertion",
+            DictationOutputMode = DictationOutputMode.DirectInsertion,
         };
 
         var target = new AppSettings();
