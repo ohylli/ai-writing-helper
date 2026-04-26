@@ -1,7 +1,7 @@
 # AI Writing Helper
 
-A Windows system tray app that fixes typos and transcribes speech using AI (not
-yet implemented), triggered by global hotkeys.
+A Windows system tray app that fixes typos and transcribes speech using AI,
+triggered by global hotkeys.
 
 ## Why this exists
 
@@ -16,7 +16,7 @@ The app has two main functions: fixing text you have already typed, and dictatin
 
 **Typo and grammar fixing.** Copy text to your clipboard, press the hotkey (Ctrl+Alt+Space by default), and the app sends it to an LLM that fixes typos and grammar mistakes while leaving your formatting alone, markdown included. The corrected text goes back to your clipboard and you hear a success sound. You can edit the system prompt if you want the corrections to work differently.
 
-**Voice dictation.** Press a hotkey to start recording, speak, press it again to stop. The audio gets transcribed and either lands on your clipboard or gets inserted at the cursor, depending on how you have it configured. Language detection is automatic.
+**Voice dictation.** Press the dictation hotkey (Ctrl+Alt+D by default) to start recording, speak, then press it again to stop. The audio is transcribed via ElevenLabs Scribe and either lands on your clipboard or gets pasted at the cursor, depending on how you have it configured. Language detection is automatic.
 
 The app lives in the system tray. Right-click the icon to open settings or quit. There is no main window.
 
@@ -27,16 +27,14 @@ covers everything, and nothing requires vision to operate.
 
 ## Current status
 
-Typo fixing works. The system tray app, settings dialog, hotkeys, LLM integration, and audio feedback are all in place. Voice dictation is not implemented yet.
-
-Currently there are no pre-built releases. You need to build it from source.
+Everything described above works. There are no pre-built releases yet, so you need to build it from source.
 
 ## Requirements
 
 - Windows 10 or later
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) for building
 - An API key for an OpenAI-compatible LLM service (for typo fixing). The default config points to Cerebras, but any compatible endpoint will do.
-- An ElevenLabs API key (for voice dictation, once that is implemented)
+- An ElevenLabs API key (for voice dictation)
 
 ## Building from source
 
