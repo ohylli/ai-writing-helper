@@ -52,10 +52,18 @@ Run the app:
 dotnet run --project src/AIWritingHelper
 ```
 
-Publish a self-contained single-file executable:
+Publish a single-file executable. Two variants are available:
+
+Self-contained (~50 MB) -- bundles the .NET 10 runtime, no install required. Recommended for most users.
 
 ```bash
 dotnet publish src/AIWritingHelper -c Release --self-contained -p:PublishSingleFile=true
+```
+
+Framework-dependent (~2 MB) -- requires the .NET 10 Desktop Runtime to already be installed. Smaller download for users who already have .NET.
+
+```bash
+dotnet publish src/AIWritingHelper -c Release --no-self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false
 ```
 
 Run the tests:

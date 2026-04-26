@@ -15,7 +15,8 @@ dotnet build          # Build the solution
 dotnet run --project src/AIWritingHelper   # Run the app
 dotnet test --filter "Category!=Integration"   # Run unit tests (default for development)
 dotnet test --filter "Category=Integration"    # Run integration tests (only when explicitly requested)
-dotnet publish src/AIWritingHelper -c Release --self-contained -p:PublishSingleFile=true  # Single-file exe
+dotnet publish src/AIWritingHelper -c Release --self-contained -p:PublishSingleFile=true  # Self-contained single-file exe (~50 MB, compressed; no .NET install required)
+dotnet publish src/AIWritingHelper -c Release --no-self-contained -r win-x64 -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=false  # Framework-dependent single-file exe (~2 MB; requires .NET 10 Desktop Runtime)
 ```
 
 **Important:** Only run `dotnet test --filter "Category!=Integration"` during normal development. Integration tests hit real APIs and should only be run when the user explicitly asks for them.

@@ -9,6 +9,7 @@
     <ApplicationIcon />
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
