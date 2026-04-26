@@ -49,6 +49,9 @@ internal sealed class ElevenLabsSTTProvider : ISTTProvider
 
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("STT API key is not configured");
+        // Block CR/LF before HttpHeaders.Add throws — its FormatException echoes the offending value.
+        if (apiKey.AsSpan().IndexOfAny('\r', '\n') >= 0)
+            throw new InvalidOperationException("STT API key contains invalid characters");
         if (string.IsNullOrWhiteSpace(modelName))
             throw new InvalidOperationException("STT model name is not configured");
 

@@ -517,9 +517,8 @@ internal sealed class SettingsForm : Form
         candidate.LlmSystemPrompt = _systemPromptBox.Text;
         candidate.SttApiKey = _sttApiKeyBox.Text;
         candidate.SttModelName = _sttModelNameBox.Text;
-        candidate.MicrophoneDeviceName = _microphoneCombo.SelectedIndex <= 0
-            ? ""
-            : _microphoneCombo.SelectedItem?.ToString() ?? "";
+        var selectedMic = _microphoneCombo.SelectedItem?.ToString() ?? "";
+        candidate.MicrophoneDeviceName = selectedMic == DefaultMicrophoneLabel ? "" : selectedMic;
         candidate.StartWithWindows = _startWithWindowsCheckBox.Checked;
 
         // Validate hotkeys before persisting — if registration fails, nothing is saved
@@ -743,22 +742,50 @@ internal sealed class SettingsForm : Form
 
     private async void OnTestConnectionClick(object? sender, EventArgs e)
     {
-        _testConnectionButton.Enabled = false;
-        _testConnectionButton.Text = "Testing...";
+        await RunTestAsync(_testConnectionButton, ct =>
+            _llmProvider.FixTextAsync(
+                "Hello", "Reply with OK",
+                _apiEndpointBox.Text, _apiKeyBox.Text, _modelNameBox.Text,
+                ct));
+    }
+
+    private async void OnTestDictationClick(object? sender, EventArgs e)
+    {
+        await RunTestAsync(_testDictationButton, async ct =>
+        {
+            using var silentAudio = SilentWavGenerator.CreateSilentWav(TimeSpan.FromMilliseconds(500));
+            // Empty transcript on silent audio is success — auth + model both worked.
+            await _sttProvider.TranscribeAsync(
+                silentAudio,
+                _sttApiKeyBox.Text,
+                _sttModelNameBox.Text,
+                ct);
+        });
+    }
+
+    private async Task RunTestAsync(Button button, Func<CancellationToken, Task> test)
+    {
+        button.Enabled = false;
+        button.Text = "Testing...";
 
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            await _llmProvider.FixTextAsync(
-                "Hello", "Reply with OK",
-                _apiEndpointBox.Text, _apiKeyBox.Text, _modelNameBox.Text,
-                cts.Token);
+            await test(cts.Token);
 
             MessageBox.Show(this,
                 "Connection successful!",
                 "Test Connection",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+        }
+        catch (OperationCanceledException)
+        {
+            MessageBox.Show(this,
+                "Connection timed out.",
+                "Test Connection",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
         catch (Exception ex)
         {
@@ -773,49 +800,8 @@ internal sealed class SettingsForm : Form
         {
             if (!IsDisposed)
             {
-                _testConnectionButton.Enabled = true;
-                _testConnectionButton.Text = "&Test Connection";
-            }
-        }
-    }
-
-    private async void OnTestDictationClick(object? sender, EventArgs e)
-    {
-        _testDictationButton.Enabled = false;
-        _testDictationButton.Text = "Testing...";
-
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            using var silentAudio = SilentWavGenerator.CreateSilentWav(TimeSpan.FromMilliseconds(500));
-            // Empty transcript on silent audio is success — auth + model both worked.
-            await _sttProvider.TranscribeAsync(
-                silentAudio,
-                _sttApiKeyBox.Text,
-                _sttModelNameBox.Text,
-                cts.Token);
-
-            MessageBox.Show(this,
-                "Connection successful!",
-                "Test Connection",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Dictation test connection failed");
-            MessageBox.Show(this,
-                $"Connection failed: {ex.Message}",
-                "Test Connection",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-        }
-        finally
-        {
-            if (!IsDisposed)
-            {
-                _testDictationButton.Enabled = true;
-                _testDictationButton.Text = "&Test Connection";
+                button.Enabled = true;
+                button.Text = "&Test Connection";
             }
         }
     }
