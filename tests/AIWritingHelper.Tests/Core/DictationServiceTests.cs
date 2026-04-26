@@ -11,14 +11,21 @@ public class DictationServiceTests
     private readonly FakeAudioRecorder _recorder = new();
     private readonly FakeSttProvider _stt = new();
     private readonly FakeClipboard _clipboard = new();
+    private readonly FakeInputSimulator _input = new();
     private readonly FakeSoundPlayer _sound = new();
     private readonly FakeTrayNotifier _notifier = new();
     private readonly AppSettings _settings = new();
     private readonly OperationLock _lock = new();
 
-    private DictationService CreateService() => new(
-        _recorder, _stt, _clipboard, _sound, _notifier, _settings, _lock,
-        NullLoggerFactory.Instance.CreateLogger<DictationService>());
+    private DictationService CreateService()
+    {
+        var directInsertion = new DirectInsertionService(
+            _clipboard, _input,
+            NullLoggerFactory.Instance.CreateLogger<DirectInsertionService>());
+        return new DictationService(
+            _recorder, _stt, _clipboard, directInsertion, _sound, _notifier, _settings, _lock,
+            NullLoggerFactory.Instance.CreateLogger<DictationService>());
+    }
 
     [Fact]
     public async Task FirstToggle_AcquiresLockAndStartsRecording()
@@ -213,6 +220,53 @@ public class DictationServiceTests
         Assert.NotNull(_stt.LastAudio);
     }
 
+    [Fact]
+    public async Task OutputMode_Clipboard_WritesClipboardAndDoesNotPaste()
+    {
+        _settings.DictationOutputMode = "Clipboard";
+        _stt.Result = "hello world";
+        var svc = CreateService();
+
+        await svc.ToggleAsync(CancellationToken.None);
+        await svc.ToggleAsync(CancellationToken.None);
+
+        Assert.Equal("hello world", _clipboard.Text);
+        Assert.Equal(0, _input.PasteCount);
+        Assert.True(_sound.SuccessPlayed);
+    }
+
+    [Fact]
+    public async Task OutputMode_DirectInsertion_PastesAndRestoresClipboard()
+    {
+        _settings.DictationOutputMode = "DirectInsertion";
+        _clipboard.Text = "ORIGINAL";
+        _stt.Result = "hello world";
+        var svc = CreateService();
+
+        await svc.ToggleAsync(CancellationToken.None);
+        await svc.ToggleAsync(CancellationToken.None);
+
+        Assert.Equal(1, _input.PasteCount);
+        // After the paste-and-restore cycle, the clipboard holds the original again.
+        Assert.Equal("ORIGINAL", _clipboard.Text);
+        Assert.True(_sound.SuccessPlayed);
+    }
+
+    [Fact]
+    public async Task OutputMode_DirectInsertionCaseInsensitive_PastesAndRestoresClipboard()
+    {
+        _settings.DictationOutputMode = "directinsertion";
+        _clipboard.Text = "ORIGINAL";
+        _stt.Result = "hello world";
+        var svc = CreateService();
+
+        await svc.ToggleAsync(CancellationToken.None);
+        await svc.ToggleAsync(CancellationToken.None);
+
+        Assert.Equal(1, _input.PasteCount);
+        Assert.Equal("ORIGINAL", _clipboard.Text);
+    }
+
     // --- Fakes ---
 
     private sealed class FakeAudioRecorder : IAudioRecorder
@@ -280,6 +334,12 @@ public class DictationServiceTests
         public string? Text { get; set; }
         public string? GetText() => Text;
         public void SetText(string text) => Text = text;
+    }
+
+    private sealed class FakeInputSimulator : IInputSimulator
+    {
+        public int PasteCount { get; private set; }
+        public void SendPaste() => PasteCount++;
     }
 
     private sealed class FakeSoundPlayer : ISoundPlayer

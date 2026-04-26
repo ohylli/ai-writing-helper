@@ -190,13 +190,13 @@ Fill in the Dictation tab with everything needed for the clipboard-mode flow, th
 
 Now that the clipboard-mode dictation flow is proven, add direct insertion as an alternative output mode.
 
-- [ ] `Core/DirectInsertionService.cs` — save clipboard → set text → `SendInput` Ctrl+V → restore clipboard
-  - Uses Win32 `SendInput` P/Invoke (not `SendKeys`)
-  - **Note:** A delay is needed between the `SendInput` paste and clipboard restore, otherwise the restore happens before the target app processes the paste. This is inherently fragile — clipboard mode remains the reliable default.
-- [ ] Add output mode radio buttons (clipboard / direct insertion) to the Dictation settings tab; persist to `AppSettings`
-- [ ] Wire `DictationService` to dispatch to clipboard or direct insertion based on the configured output mode
-- [ ] Unit tests for `DirectInsertionService` and the mode dispatch in `DictationService`
-- [ ] End-to-end test of direct insertion mode
+- [x] `Core/DirectInsertionService.cs` — save clipboard → set text → `SendInput` Ctrl+V → restore clipboard
+  - Uses Win32 `SendInput` P/Invoke (not `SendKeys`), behind `IInputSimulator` for testability (`Win32InputSimulator` is the production impl)
+  - **Note:** A 150 ms `Task.Delay` between the `SendInput` paste and clipboard restore — otherwise the restore happens before the target app processes the paste. Inherently fragile — clipboard mode remains the reliable default.
+- [x] Add output mode radio buttons (clipboard / direct insertion) in a `GroupBox` on the Dictation settings tab; persist to `AppSettings`
+- [x] Wire `DictationService` to dispatch to clipboard or direct insertion based on `_settings.DictationOutputMode` (case-insensitive `"DirectInsertion"` check)
+- [x] Unit tests for `DirectInsertionService` and the mode dispatch in `DictationService`
+- [x] End-to-end test of direct insertion mode (manual)
 
 ---
 

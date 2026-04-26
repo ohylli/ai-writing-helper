@@ -73,6 +73,8 @@ internal static class Program
             services.AddSingleton<ISoundPlayer, SystemSoundPlayer>();
             services.AddSingleton<IAudioRecorder, MicrophoneRecorder>();
             services.AddSingleton<IClipboardService, ClipboardService>();
+            services.AddSingleton<IInputSimulator, Win32InputSimulator>();
+            services.AddSingleton<DirectInsertionService>();
             services.AddHttpClient();
             services.AddSingleton<ILLMProvider, OpenAICompatibleLLMProvider>();
             services.AddSingleton<ISTTProvider, ElevenLabsSTTProvider>();

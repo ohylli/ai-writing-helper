@@ -64,13 +64,14 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1–12 are complete — typo fixing and clipboard-mode dictation are both functional end-to-end, and the Dictation settings tab is in place. Next up: the direct-insertion output mode (phase 13).
+Phases 1–13 are complete — typo fixing and dictation are fully functional end-to-end, including direct-insertion output mode. Next up: phase 14 (final integration, single-file publish, README).
 
 **What's working:**
 - System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys
 - Typo fix flow: Ctrl+Alt+Space → clipboard text → LLM API → corrected text back to clipboard → success sound
 - Dictation flow (clipboard mode): Ctrl+Alt+D → record → Ctrl+Alt+D → STT → transcript on clipboard → success sound. Empty transcript surfaces "No speech detected" without clobbering the clipboard.
-- Core abstractions: `ILLMProvider`, `ISTTProvider`, `IAudioRecorder`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier`
+- Dictation flow (direct-insertion mode): same toggle, but the transcript is pasted into the focused window via synthetic Ctrl+V, then the previous clipboard text is restored after a 150 ms settle delay.
+- Core abstractions: `ILLMProvider`, `ISTTProvider`, `IAudioRecorder`, `IClipboardService`, `ISoundPlayer`, `ITrayNotifier`, `IInputSimulator`
 - `OpenAICompatibleLLMProvider` (Services/) with configurable endpoint/model/API key, 30s timeout
 - `OperationLock` (Core/) — semaphore guard ensuring single concurrent operation
 - `GlobalHotkeyManager` (Core/) — Win32 `RegisterHotKey` P/Invoke with `MOD_NOREPEAT`
@@ -78,10 +79,10 @@ Phases 1–12 are complete — typo fixing and clipboard-mode dictation are both
 - Audio feedback via `SystemSoundPlayer`, balloon notifications via `TrayNotifier`
 - `MicrophoneRecorder` (Audio/) — NAudio `WaveInEvent` wrapper with device selection, 16kHz/16-bit/mono WAV, 1-hour auto-stop
 - `ElevenLabsSTTProvider` (Services/) — multipart upload to Scribe v2 (`scribe_v2`), `xi-api-key` header, 30s timeout, returns transcribed text
-- `DictationService` (Core/) — toggle pattern, holds `OperationLock` across record→transcribe→clipboard, releases lock cleanly on `RecordingFaulted`
-- Dictation settings tab (UI/) — STT API key (masked), model name, "Test Connection" (uses `SilentWavGenerator` to send a 500 ms silent WAV), microphone dropdown populated from `IAudioRecorder.EnumerateDevices()` with a "(Default)" entry; `ISTTProvider.TranscribeAsync` has an overload accepting credentials as parameters (mirrors `ILLMProvider.FixTextAsync`), so Test Connection doesn't mutate the live settings singleton
-
-**Not yet implemented:** direct-insertion output mode.
+- `DictationService` (Core/) — toggle pattern, holds `OperationLock` across record→transcribe→output, releases lock cleanly on `RecordingFaulted`. Dispatches between clipboard and direct insertion via `_settings.DictationOutputMode`.
+- Dictation settings tab (UI/) — STT API key (masked), model name, "Test Connection" (uses `SilentWavGenerator` to send a 500 ms silent WAV), microphone dropdown populated from `IAudioRecorder.EnumerateDevices()` with a "(Default)" entry, output-mode radio group (Clipboard / Direct insertion) inside an accessible `GroupBox`. `ISTTProvider.TranscribeAsync` has an overload accepting credentials as parameters (mirrors `ILLMProvider.FixTextAsync`), so Test Connection doesn't mutate the live settings singleton
+- `DirectInsertionService` (Core/) — orchestrates save→set→paste→delay→restore around `IClipboardService` and `IInputSimulator`. Restore happens in `finally`; non-text or empty original clipboards are not restored (matches the design's stated limitation).
+- `Win32InputSimulator` (Core/) — `SendInput` P/Invoke that emits Ctrl down → V down → V up → Ctrl up in a single call.
 
 ## Implementation Plan
 

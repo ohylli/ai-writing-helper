@@ -57,6 +57,8 @@ internal sealed class SettingsForm : Form
     private readonly TextBox _sttModelNameBox;
     private readonly Button _testDictationButton;
     private readonly ComboBox _microphoneCombo;
+    private readonly RadioButton _outputModeClipboardRadio;
+    private readonly RadioButton _outputModeDirectInsertionRadio;
 
     // Buttons
     private readonly Button _saveButton;
@@ -335,7 +337,7 @@ internal sealed class SettingsForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 4,
+            RowCount = 5,
             Padding = new Padding(10)
         };
         dictationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -344,6 +346,7 @@ internal sealed class SettingsForm : Form
         dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // STT model name
         dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Test Connection
         dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Microphone
+        dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Output mode
 
         // STT API key
         var sttApiKeyLabel = new Label
@@ -419,6 +422,44 @@ internal sealed class SettingsForm : Form
         dictationLayout.Controls.Add(microphoneLabel, 0, 3);
         dictationLayout.Controls.Add(_microphoneCombo, 1, 3);
 
+        // Output mode (clipboard vs direct insertion)
+        var outputModeGroup = new GroupBox
+        {
+            Text = "Output mode",
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            AccessibleName = "Dictation output mode",
+            AccessibleDescription = "Where transcribed text is placed"
+        };
+        var outputModePanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            Padding = new Padding(5)
+        };
+        _outputModeClipboardRadio = new RadioButton
+        {
+            Text = "Clipboard",
+            AutoSize = true,
+            AccessibleName = "Clipboard output mode",
+            AccessibleDescription = "Place transcribed text on the clipboard for you to paste manually"
+        };
+        _outputModeDirectInsertionRadio = new RadioButton
+        {
+            Text = "Direct insertion",
+            AutoSize = true,
+            AccessibleName = "Direct insertion output mode",
+            AccessibleDescription = "Automatically paste transcribed text into the focused window, then restore the previous clipboard contents"
+        };
+        outputModePanel.Controls.Add(_outputModeClipboardRadio);
+        outputModePanel.Controls.Add(_outputModeDirectInsertionRadio);
+        outputModeGroup.Controls.Add(outputModePanel);
+        dictationLayout.Controls.Add(outputModeGroup, 0, 4);
+        dictationLayout.SetColumnSpan(outputModeGroup, 2);
+
         dictationTab.Controls.Add(dictationLayout);
 
         tabControl.TabPages.Add(generalTab);
@@ -483,6 +524,9 @@ internal sealed class SettingsForm : Form
         _sttApiKeyBox.Text = _settings.SttApiKey;
         _sttModelNameBox.Text = _settings.SttModelName;
         SelectMicrophoneByName(_settings.MicrophoneDeviceName);
+        bool isDirect = string.Equals(_settings.DictationOutputMode, "DirectInsertion", StringComparison.OrdinalIgnoreCase);
+        _outputModeDirectInsertionRadio.Checked = isDirect;
+        _outputModeClipboardRadio.Checked = !isDirect;
     }
 
     private void SelectMicrophoneByName(string deviceName)
@@ -519,6 +563,7 @@ internal sealed class SettingsForm : Form
         candidate.SttModelName = _sttModelNameBox.Text;
         var selectedMic = _microphoneCombo.SelectedItem?.ToString() ?? "";
         candidate.MicrophoneDeviceName = selectedMic == DefaultMicrophoneLabel ? "" : selectedMic;
+        candidate.DictationOutputMode = _outputModeDirectInsertionRadio.Checked ? "DirectInsertion" : "Clipboard";
         candidate.StartWithWindows = _startWithWindowsCheckBox.Checked;
 
         // Validate hotkeys before persisting — if registration fails, nothing is saved
