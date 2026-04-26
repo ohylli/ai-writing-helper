@@ -207,6 +207,44 @@ public class ElevenLabsSTTProviderTests
         Assert.Contains("model name", ex.Message);
     }
 
+    [Fact]
+    public async Task TranscribeAsync_WithExplicitCredentials_UsesProvidedKey()
+    {
+        // Settings hold one key; the overload should use the explicit one instead.
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        await provider.TranscribeAsync(MakeWav(), "explicit-key", "scribe_v2", CancellationToken.None);
+
+        Assert.True(handler.LastRequest!.Headers.TryGetValues("xi-api-key", out var keyValues));
+        Assert.Equal("explicit-key", keyValues!.Single());
+    }
+
+    [Fact]
+    public async Task TranscribeAsync_WithExplicitCredentials_UsesProvidedModel()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        await provider.TranscribeAsync(MakeWav(), "test-api-key", "explicit-model", CancellationToken.None);
+
+        var bodyText = Encoding.UTF8.GetString(handler.LastRequestBodyBytes!);
+        Assert.Contains("explicit-model", bodyText);
+        Assert.DoesNotContain("scribe_v2", bodyText);
+    }
+
+    [Fact]
+    public async Task TranscribeAsync_WithExplicitCredentials_EmptyKey_Throws()
+    {
+        var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, ValidResponse);
+        var provider = CreateProvider(DefaultSettings(), handler);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.TranscribeAsync(MakeWav(), "", "scribe_v2", CancellationToken.None));
+
+        Assert.Contains("API key", ex.Message);
+    }
+
     private sealed class FakeHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new(handler);

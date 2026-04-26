@@ -174,13 +174,15 @@ Get the basic dictation flow working end-to-end with clipboard output only. Dire
 
 Fill in the Dictation tab with everything needed for the clipboard-mode flow, then validate end-to-end. Output mode UI is intentionally omitted — it lands in phase 13 alongside direct insertion.
 
-- [ ] Fill in the Dictation tab: API key, model name, "Test Connection", microphone dropdown
-- [ ] Microphone dropdown populated from `IAudioRecorder.EnumerateDevices()`
-- [ ] Accessibility: same standards as Phase 7
-- [ ] Register dictation hotkey alongside typo fix hotkey
-- [ ] End-to-end dictation: press hotkey → speak → press hotkey → text on clipboard
-- [ ] Test concurrent operation rejection (trigger typo fix during dictation)
-- [ ] NVDA testing for dictation tab controls
+- [x] Fill in the Dictation tab: API key, model name, "Test Connection", microphone dropdown
+- [x] Microphone dropdown populated from `IAudioRecorder.EnumerateDevices()`. A "(Default)" entry maps to empty `MicrophoneDeviceName` (system default). Saved devices that aren't currently present (e.g., USB mic unplugged) are added back to the combo so save round-trips don't silently drop the user's setting.
+- [x] Accessibility: same standards as Phase 7
+- [x] Register dictation hotkey alongside typo fix hotkey (already done in phase 11 — `TrayApplicationContext.RegisterHotkeys` registers both)
+- [x] `ISTTProvider.TranscribeAsync` overload that accepts API key + model name as parameters (mirrors `ILLMProvider.FixTextAsync` overload), so Test Connection doesn't need to mutate the live settings singleton
+- [x] `Audio/SilentWavGenerator` — small helper that produces a 16 kHz / 16-bit / mono silent WAV stream for the STT test request
+- [x] End-to-end dictation: press hotkey → speak → press hotkey → text on clipboard (manual)
+- [x] Test concurrent operation rejection (trigger typo fix during dictation) (manual)
+- [x] NVDA testing for dictation tab controls (manual)
 
 ---
 

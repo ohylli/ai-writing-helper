@@ -64,7 +64,7 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1–11 are complete — typo fixing and clipboard-mode dictation are both functional end-to-end. Next up: the Dictation settings tab (phase 12) and the direct-insertion output mode (phase 13).
+Phases 1–12 are complete — typo fixing and clipboard-mode dictation are both functional end-to-end, and the Dictation settings tab is in place. Next up: the direct-insertion output mode (phase 13).
 
 **What's working:**
 - System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys
@@ -79,8 +79,9 @@ Phases 1–11 are complete — typo fixing and clipboard-mode dictation are both
 - `MicrophoneRecorder` (Audio/) — NAudio `WaveInEvent` wrapper with device selection, 16kHz/16-bit/mono WAV, 1-hour auto-stop
 - `ElevenLabsSTTProvider` (Services/) — multipart upload to Scribe v2 (`scribe_v2`), `xi-api-key` header, 30s timeout, returns transcribed text
 - `DictationService` (Core/) — toggle pattern, holds `OperationLock` across record→transcribe→clipboard, releases lock cleanly on `RecordingFaulted`
+- Dictation settings tab (UI/) — STT API key (masked), model name, "Test Connection" (uses `SilentWavGenerator` to send a 500 ms silent WAV), microphone dropdown populated from `IAudioRecorder.EnumerateDevices()` with a "(Default)" entry; `ISTTProvider.TranscribeAsync` has an overload accepting credentials as parameters (mirrors `ILLMProvider.FixTextAsync`), so Test Connection doesn't mutate the live settings singleton
 
-**Not yet implemented:** Dictation tab GUI (STT API key/model/mic dropdown — currently must be edited directly in `settings.yaml`), direct-insertion output mode.
+**Not yet implemented:** direct-insertion output mode.
 
 ## Implementation Plan
 

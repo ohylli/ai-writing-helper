@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using AIWritingHelper.Audio;
 using AIWritingHelper.Config;
 using AIWritingHelper.Core;
 using Microsoft.Extensions.Logging;
@@ -16,10 +17,14 @@ internal sealed class SettingsForm : Form
     private const int OBJID_CLIENT = -4;
     private const int CHILDID_SELF = 0;
 
+    private const string DefaultMicrophoneLabel = "(Default)";
+
     private readonly AppSettings _settings;
     private readonly SettingsManager _settingsManager;
     private readonly LoggingLevelSwitch _levelSwitch;
     private readonly ILLMProvider _llmProvider;
+    private readonly ISTTProvider _sttProvider;
+    private readonly IAudioRecorder _audioRecorder;
     private readonly GlobalHotkeyManager _hotkeyManager;
     private readonly IStartupManager _startupManager;
     private readonly ILogger<SettingsForm> _logger;
@@ -47,6 +52,12 @@ internal sealed class SettingsForm : Form
     private readonly Button _testConnectionButton;
     private readonly TextBox _systemPromptBox;
 
+    // Dictation tab controls
+    private readonly TextBox _sttApiKeyBox;
+    private readonly TextBox _sttModelNameBox;
+    private readonly Button _testDictationButton;
+    private readonly ComboBox _microphoneCombo;
+
     // Buttons
     private readonly Button _saveButton;
     private readonly Button _cancelButton;
@@ -56,6 +67,8 @@ internal sealed class SettingsForm : Form
         SettingsManager settingsManager,
         LoggingLevelSwitch levelSwitch,
         ILLMProvider llmProvider,
+        ISTTProvider sttProvider,
+        IAudioRecorder audioRecorder,
         GlobalHotkeyManager hotkeyManager,
         IStartupManager startupManager,
         ILogger<SettingsForm> logger)
@@ -64,6 +77,8 @@ internal sealed class SettingsForm : Form
         _settingsManager = settingsManager;
         _levelSwitch = levelSwitch;
         _llmProvider = llmProvider;
+        _sttProvider = sttProvider;
+        _audioRecorder = audioRecorder;
         _hotkeyManager = hotkeyManager;
         _startupManager = startupManager;
         _logger = logger;
@@ -314,17 +329,97 @@ internal sealed class SettingsForm : Form
         var dictationTab = new TabPage("Dictation")
         {
             AccessibleName = "Dictation settings",
-            AccessibleDescription = "Dictation configuration"
+            AccessibleDescription = "Speech-to-text credentials, model, and microphone selection"
         };
-        var dictationLabel = new Label
+        var dictationLayout = new TableLayoutPanel
         {
-            Text = "Dictation settings will be available in a future update.",
-            AutoSize = true,
-            Padding = new Padding(10),
-            AccessibleName = "Dictation settings placeholder",
-            AccessibleDescription = "Dictation settings are not yet available"
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 4,
+            Padding = new Padding(10)
         };
-        dictationTab.Controls.Add(dictationLabel);
+        dictationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        dictationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // STT API key
+        dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // STT model name
+        dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Test Connection
+        dictationLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Microphone
+
+        // STT API key
+        var sttApiKeyLabel = new Label
+        {
+            Text = "API key:",
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            TabStop = false
+        };
+        _sttApiKeyBox = new TextBox
+        {
+            Dock = DockStyle.Fill,
+            UseSystemPasswordChar = true,
+            AccessibleName = "Speech to text API key",
+            AccessibleDescription = "Secret API key for the speech-to-text service. Characters are hidden."
+        };
+        dictationLayout.Controls.Add(sttApiKeyLabel, 0, 0);
+        dictationLayout.Controls.Add(_sttApiKeyBox, 1, 0);
+
+        // STT model name
+        var sttModelLabel = new Label
+        {
+            Text = "Model name:",
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            TabStop = false
+        };
+        _sttModelNameBox = new TextBox
+        {
+            Dock = DockStyle.Fill,
+            AccessibleName = "Speech to text model name",
+            AccessibleDescription = "Name of the speech-to-text model to use for dictation"
+        };
+        dictationLayout.Controls.Add(sttModelLabel, 0, 1);
+        dictationLayout.Controls.Add(_sttModelNameBox, 1, 1);
+
+        // Test Connection button
+        _testDictationButton = new Button
+        {
+            Text = "&Test Connection",
+            AutoSize = true,
+            AccessibleName = "Test dictation connection",
+            AccessibleDescription = "Send a short silent test request to verify speech-to-text credentials work"
+        };
+        _testDictationButton.Click += OnTestDictationClick;
+        dictationLayout.Controls.Add(_testDictationButton, 1, 2);
+
+        // Microphone dropdown
+        var microphoneLabel = new Label
+        {
+            Text = "Microphone:",
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            TabStop = false
+        };
+        _microphoneCombo = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Dock = DockStyle.Fill,
+            AccessibleName = "Microphone",
+            AccessibleDescription = "Microphone device used for dictation. Select Default to use the system default device."
+        };
+        _microphoneCombo.Items.Add(DefaultMicrophoneLabel);
+        try
+        {
+            foreach (var dev in _audioRecorder.EnumerateDevices())
+                _microphoneCombo.Items.Add(dev.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enumerate microphones");
+        }
+        dictationLayout.Controls.Add(microphoneLabel, 0, 3);
+        dictationLayout.Controls.Add(_microphoneCombo, 1, 3);
+
+        dictationTab.Controls.Add(dictationLayout);
 
         tabControl.TabPages.Add(generalTab);
         tabControl.TabPages.Add(typoFixTab);
@@ -383,6 +478,29 @@ internal sealed class SettingsForm : Form
         _apiKeyBox.Text = _settings.LlmApiKey;
         _modelNameBox.Text = _settings.LlmModelName;
         _systemPromptBox.Text = _settings.LlmSystemPrompt;
+
+        // Dictation
+        _sttApiKeyBox.Text = _settings.SttApiKey;
+        _sttModelNameBox.Text = _settings.SttModelName;
+        SelectMicrophoneByName(_settings.MicrophoneDeviceName);
+    }
+
+    private void SelectMicrophoneByName(string deviceName)
+    {
+        if (string.IsNullOrEmpty(deviceName))
+        {
+            _microphoneCombo.SelectedIndex = 0;
+            return;
+        }
+
+        var index = _microphoneCombo.Items.IndexOf(deviceName);
+        if (index < 0)
+        {
+            // Saved device isn't currently present (e.g., USB mic unplugged).
+            // Add it so save round-trips don't silently change the user's setting.
+            index = _microphoneCombo.Items.Add(deviceName);
+        }
+        _microphoneCombo.SelectedIndex = index;
     }
 
     private void OnSaveClick(object? sender, EventArgs e)
@@ -397,6 +515,11 @@ internal sealed class SettingsForm : Form
         candidate.LlmApiKey = _apiKeyBox.Text;
         candidate.LlmModelName = _modelNameBox.Text;
         candidate.LlmSystemPrompt = _systemPromptBox.Text;
+        candidate.SttApiKey = _sttApiKeyBox.Text;
+        candidate.SttModelName = _sttModelNameBox.Text;
+        candidate.MicrophoneDeviceName = _microphoneCombo.SelectedIndex <= 0
+            ? ""
+            : _microphoneCombo.SelectedItem?.ToString() ?? "";
         candidate.StartWithWindows = _startWithWindowsCheckBox.Checked;
 
         // Validate hotkeys before persisting — if registration fails, nothing is saved
@@ -652,6 +775,47 @@ internal sealed class SettingsForm : Form
             {
                 _testConnectionButton.Enabled = true;
                 _testConnectionButton.Text = "&Test Connection";
+            }
+        }
+    }
+
+    private async void OnTestDictationClick(object? sender, EventArgs e)
+    {
+        _testDictationButton.Enabled = false;
+        _testDictationButton.Text = "Testing...";
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var silentAudio = SilentWavGenerator.CreateSilentWav(TimeSpan.FromMilliseconds(500));
+            // Empty transcript on silent audio is success — auth + model both worked.
+            await _sttProvider.TranscribeAsync(
+                silentAudio,
+                _sttApiKeyBox.Text,
+                _sttModelNameBox.Text,
+                cts.Token);
+
+            MessageBox.Show(this,
+                "Connection successful!",
+                "Test Connection",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Dictation test connection failed");
+            MessageBox.Show(this,
+                $"Connection failed: {ex.Message}",
+                "Test Connection",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                _testDictationButton.Enabled = true;
+                _testDictationButton.Text = "&Test Connection";
             }
         }
     }

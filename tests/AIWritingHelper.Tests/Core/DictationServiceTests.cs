@@ -270,6 +270,9 @@ public class DictationServiceTests
             if (ExceptionToThrow is not null) throw ExceptionToThrow;
             return Task.FromResult(Result);
         }
+
+        public Task<string> TranscribeAsync(Stream audio, string apiKey, string modelName, CancellationToken ct)
+            => TranscribeAsync(audio, ct);
     }
 
     private sealed class FakeClipboard : IClipboardService

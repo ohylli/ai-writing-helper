@@ -19,6 +19,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
     private readonly SettingsManager _settingsManager;
     private readonly LoggingLevelSwitch _levelSwitch;
     private readonly ILLMProvider _llmProvider;
+    private readonly ISTTProvider _sttProvider;
+    private readonly IAudioRecorder _audioRecorder;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IStartupManager _startupManager;
     private SettingsForm? _settingsForm;
@@ -33,6 +35,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         SettingsManager settingsManager,
         LoggingLevelSwitch levelSwitch,
         ILLMProvider llmProvider,
+        ISTTProvider sttProvider,
+        IAudioRecorder audioRecorder,
         ILoggerFactory loggerFactory,
         IStartupManager startupManager)
     {
@@ -45,6 +49,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
         _settingsManager = settingsManager;
         _levelSwitch = levelSwitch;
         _llmProvider = llmProvider;
+        _sttProvider = sttProvider;
+        _audioRecorder = audioRecorder;
         _loggerFactory = loggerFactory;
         _startupManager = startupManager;
 
@@ -134,6 +140,8 @@ internal sealed class TrayApplicationContext : ApplicationContext, ITrayNotifier
             _settingsManager,
             _levelSwitch,
             _llmProvider,
+            _sttProvider,
+            _audioRecorder,
             _hotkeyManager,
             _startupManager,
             _loggerFactory.CreateLogger<SettingsForm>());

@@ -37,12 +37,15 @@ internal sealed class ElevenLabsSTTProvider : ISTTProvider
         _timeout = timeout;
     }
 
-    public async Task<string> TranscribeAsync(Stream audio, CancellationToken ct)
+    public Task<string> TranscribeAsync(Stream audio, CancellationToken ct)
+        => TranscribeCoreAsync(audio, _settings.SttApiKey, _settings.SttModelName, ct);
+
+    public Task<string> TranscribeAsync(Stream audio, string apiKey, string modelName, CancellationToken ct)
+        => TranscribeCoreAsync(audio, apiKey, modelName, ct);
+
+    private async Task<string> TranscribeCoreAsync(Stream audio, string apiKey, string modelName, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(audio);
-
-        var apiKey = _settings.SttApiKey;
-        var modelName = _settings.SttModelName;
 
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("STT API key is not configured");
