@@ -65,7 +65,7 @@ Stored as YAML in `%APPDATA%\AIWritingHelper\`. Includes API credentials, hotkey
 
 ## Current Status
 
-Phases 1–13 are complete — typo fixing and dictation are fully functional end-to-end, including direct-insertion output mode. Next up: phase 14 (final integration, single-file publish, README).
+Phases 1–14 are complete — typo fixing and dictation are fully functional end-to-end, including direct-insertion output mode.
 
 **What's working:**
 - System tray app with Settings dialog (General, Typo Fixing, Dictation tabs) and global hotkeys

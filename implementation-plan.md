@@ -202,9 +202,9 @@ Now that the clipboard-mode dictation flow is proven, add direct insertion as an
 
 ## Phase 14: Final Integration & Testing
 
-- [ ] All unit tests pass
-- [ ] `dotnet publish` single-file exe works
-- [ ] Update README with usage instructions
+- [x] All unit tests pass
+- [x] `dotnet publish` single-file exe works
+- [x] Update README with usage instructions
 
 ---
 
