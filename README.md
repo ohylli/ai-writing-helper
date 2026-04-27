@@ -25,16 +25,34 @@ what happened without needing to look at anything. This matters because I use
 the NVDA screen reader. Every control has a proper accessible name, tab order
 covers everything, and nothing requires vision to operate.
 
-## Current status
-
-Everything described above works. There are no pre-built releases yet, so you need to build it from source.
-
 ## Requirements
 
 - Windows 10 or later
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) for building
 - An API key for an OpenAI-compatible LLM service (for typo fixing). The default config points to Cerebras, but any compatible endpoint will do.
 - An ElevenLabs API key (for voice dictation)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) — only if you want to build from source
+
+## Download
+
+Grab a pre-built executable from the [latest release](https://github.com/ohylli/ai-writing-helper/releases/latest).
+Two single-file builds are published:
+
+- **Self-contained** (~50 MB) -- bundles the .NET 10 runtime, no install required. Recommended if you are not sure which to pick.
+- **Framework-dependent** (~2 MB) -- smaller, but requires the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) to already be installed.
+
+Both are a single `.exe` -- download and run.
+
+## Configuration
+
+Everything is configured through the Settings dialog, accessible from the system tray icon. Settings are stored as YAML in `%APPDATA%\AIWritingHelper\`.
+
+The dialog has three tabs:
+
+- **General** -- hotkey bindings, start with Windows, log level.
+- **Typo Fixing** -- LLM endpoint URL, API key, model, and the system prompt that controls how corrections behave.
+- **Dictation** -- speech-to-text API key and model, microphone selection, output mode (clipboard or direct insertion).
+
+Both service tabs have a Test Connection button so you can verify your API setup before trying to use it.
 
 ## Building from source
 
@@ -71,23 +89,11 @@ Run the tests:
 ```bash
 # unit tests
 dotnet test --filter "Category!=Integration"
-# integration tests requires LLM API key.
+# integration tests requires LLM and Elevenlabs API keys.
 dotnet test --filter "Category=Integration" 
 ```
 
-Integration tests require a `.env` file in `tests/AIWritingHelper.Tests/` (copy `.env.example` and add your API key). Tests are skipped automatically if the key is missing.
-
-## Configuration
-
-Everything is configured through the Settings dialog, accessible from the system tray icon. Settings are stored as YAML in `%APPDATA%\AIWritingHelper\`.
-
-The dialog has three tabs:
-
-- **General** -- hotkey bindings, start with Windows, log level.
-- **Typo Fixing** -- LLM endpoint URL, API key, model, and the system prompt that controls how corrections behave.
-- **Dictation** -- speech-to-text API key and model, microphone selection, output mode (clipboard or direct insertion).
-
-Both service tabs have a Test Connection button so you can verify your API setup before trying to use it.
+Integration tests require a `.env` file in `tests/AIWritingHelper.Tests/` (copy `.env.example` and add your API keys). Tests are skipped automatically if the key is missing.
 
 ## Tech stack
 
