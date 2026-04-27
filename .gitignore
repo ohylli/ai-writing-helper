@@ -1,5 +1,6 @@
 .claude/
 .vscode/
+dist/
 
 ## .NET
 bin/
